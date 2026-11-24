@@ -34,6 +34,25 @@ h2{margin:14px 0 8px;color:#67e8f9} h3{color:#facc15;margin:10px 0 6px}
 .kbd{background:#334155;border-radius:6px;padding:2px 8px;font-weight:700}
 #toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#111827ee;border:1px solid #22d3ee;padding:8px 16px;border-radius:99px;font-weight:700;z-index:20;display:none}
 @media(max-width:640px){canvas{max-height:62vh} #hud{font-size:12px}}
+@keyframes menuFloat{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px #22d3ee55}50%{box-shadow:0 0 45px #a855f7aa}}
+#wrap{background:linear-gradient(120deg,#050510,#1a1a4a,#2e0a2e,#050510);background-size:300% 300%;animation:menuFloat 18s ease infinite}
+.panel{animation:popIn .25s ease}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.shopitem{background:#0f172a;border:2px solid #334155;border-radius:12px;padding:12px;cursor:pointer}
+.shopitem:hover{border-color:#facc15}
+.shopitem.owned{border-color:#4ade80}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.tabs button{padding:7px 10px;font-size:12px}
+.currbar{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;font-weight:800;margin:8px 0;color:#facc15}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:12px 0}
+.statbox{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:12px}
+.ach{display:flex;gap:10px;align-items:center;background:#0f172a;border:1px solid #334155;border-radius:10px;padding:10px;margin:6px 0;text-align:left}
+.ach.unlocked{border-color:#facc15}
+select,input[type=text]{padding:8px;border-radius:8px;background:#1e293b;color:#fff;border:1px solid #334155}
+.introcard{animation:glowPulse 2s infinite}
+
 </style>
 </head>
 <body>
@@ -73,6 +92,12 @@ h2{margin:14px 0 8px;color:#67e8f9} h3{color:#facc15;margin:10px 0 6px}
     <button class="alt" onclick="editorPlaytest()">▶ Playtest</button>
     <button class="ghost" onclick="editorExport()">📤 Export</button>
     <button class="ghost" onclick="editorImport()">📥 Import</button>
+    <button class="ghost" onclick="editorCopy()">📋 Copy</button><button class="ghost" onclick="editorPaste()">📄 Paste</button>
+    <label class="small">Snap <select id="edSnap"><option value="on">On (36px)</option><option value="off">Off</option></select></label>
+    <label class="small">Length <select id="edLength"><option value="short">Short</option><option value="medium" selected>Medium</option><option value="long">Long</option><option value="xl">XL</option></select></label>
+    <label class="small">BG <input type="color" id="edBg" value="#0a0a2e" style="width:44px;height:32px;padding:2px"></label>
+    <label class="small">Tempo <input id="edTempo" type="number" value="120" min="80" max="180" style="width:64px"></label>
+    <label class="small"><input type="checkbox" id="edFeatured"> ⭐ Featured</label>
     <button class="ghost" onclick="editorExit()">✖ Back to Menu</button>
     <textarea id="edCode" placeholder="Share code appears here — paste a code here to import" style="width:100%;height:44px;border-radius:8px;background:#1e293b;color:#fff;padding:6px"></textarea>
   </div>
@@ -123,6 +148,16 @@ const LEVELS=[
  {id:'beat8',name:'Swing City',diff:'Insane',stars:12,color:'#38bdf8',bg:'#041a2e',bpm:156,len:11200,seed:117,desc:'Swing mode, camera colour shifts, tight arcs.'},
  {id:'beat9',name:'Abyss Demon',diff:'Demon',stars:14,color:'#ef4444',bg:'#200404',bpm:160,len:12400,seed:131,desc:'DEMON. All 9 modes, dual portals, orbs, no mercy.'},
  {id:'plat1',name:'Neon Tower',diff:'Platformer',stars:0,moons:3,color:'#f472b6',bg:'#2e0a2e',bpm:120,len:0,seed:7,platformer:true,desc:'PLATFORMER MODE (2.2): move freely with A/D, jump, collect 3 Moons, Jetpack up the tower.'},
+ {id:'ember',name:'Ember Sprint',diff:'Easy',stars:3,color:'#fb923c',bg:'#2e1405',bpm:118,len:6000,seed:141,desc:'Warm-up run. Gentle spikes and sunny pads.'},
+ {id:'frost',name:'Frostbite Peaks',diff:'Normal',stars:5,color:'#7dd3fc',bg:'#041a2e',bpm:128,len:7200,seed:151,desc:'Icy ship sections and slippery saws.'},
+ {id:'toxic',name:'Toxic Lab',diff:'Hard',stars:7,color:'#a3e635',bg:'#0a1a05',bpm:136,len:8600,seed:163,desc:'Gravity flips in the lab. Mind the green goo.'},
+ {id:'shadow',name:'Shadow Realm',diff:'Harder',stars:9,color:'#818cf8',bg:'#0a0a24',bpm:148,len:10000,seed:173,desc:'Dark portals, Wave tunnels and shadow spikes.'},
+ {id:'lava',name:'Lava Rush',diff:'Insane',stars:12,color:'#ef4444',bg:'#2e0505',bpm:154,len:11600,seed:181,desc:'Molten speed portals and blazing Robot jumps.'},
+ {id:'crystal',name:'Crystal Demon',diff:'Demon',stars:15,color:'#e879f9',bg:'#20041e',bpm:162,len:12800,seed:191,desc:'DEMON. Shattering dual portals, every mode, no mercy.'},
+ {id:'midnight',name:'Midnight Demon',diff:'Demon',stars:14,color:'#6366f1',bg:'#05051e',bpm:158,len:12600,seed:197,desc:'DEMON. A midnight gauntlet of Swing, Spider and Wave.'},
+ {id:'sky',name:'Sky Fortress',diff:'Platformer',stars:0,moons:4,color:'#38bdf8',bg:'#041a2e',bpm:122,len:0,seed:8,platformer:true,desc:'PLATFORMER: climb the sky fortress, collect 4 Moons, Jetpack to the top.'},
+ {id:'deep',name:'Deep Caverns',diff:'Platformer',stars:0,moons:3,color:'#34d399',bg:'#041a12',bpm:118,len:0,seed:9,platformer:true,desc:'PLATFORMER: explore the caverns below, collect 3 Moons.'},
+ {id:'aurora',name:'Aurora Summit',diff:'Insane',stars:13,color:'#2dd4bf',bg:'#04202e',bpm:156,len:11800,seed:211,desc:'Northern lights, free-fly sections and a stormy finale.'},
 ];
 const DIFFC2={Demon:'#ef4444',Platformer:'#f472b6'};
 let customLevels=store.get('custom',[]);
@@ -130,6 +165,109 @@ function saveCustomLevels(){ store.set('custom',customLevels); refreshCustomLeve
 function refreshCustomLevels(){ for(let i=LEVELS.length-1;i>=0;i--){ if(LEVELS[i].custom)LEVELS.splice(i,1); } customLevels.forEach(c=>LEVELS.push(c)); }
 refreshCustomLevels();
 const DIFFC={Easy:'#4ade80',Normal:'#22d3ee',Hard:'#facc15',Harder:'#fb923c',Insane:'#f87171',Demon:'#ef4444',Platformer:'#f472b6'};
+function isDemonLevel(d){return d&&d.diff==='Demon'}
+/* ===== 1000x UPGRADE: currencies, settings, stats, shops, gauntlets, daily, versus, achievements ===== */
+let currency=store.get('currency',{stars:0,mana:0,diamonds:0,keys:0,userCoins:0});
+let settings=store.get('settings',{musicVol:0.35,sfxVol:1,shake:true,showFPS:false,lowDetail:false});
+let stats=store.get('stats',{jumps:0,deaths:0,playTime:0,levelsBeaten:0,coinsTotal:0});
+let shopOwned=store.get('shopOwned',['cube_default']);
+let achievementsUnlocked=store.get('achievements',[]);
+let dailyClaimed=store.get('dailyClaimed','');
+let editorClipboard=null;
+let combo=0, fpsVal=0, fpsFrames=0, fpsLast=performance.now();
+let versusActive=false, versusGhost=0, versusSpeed=0, versusName='Ghost', versusResult='';
+let confettiOn=false;
+function saveCurrency(){store.set('currency',currency)} function saveSettings(){store.set('settings',settings)} function saveStats(){store.set('stats',stats)}
+function totalStars(){let t=0;LEVELS.forEach(l=>{if(!l.custom&&best[l.id]===100)t+=l.stars||0});return t}
+function totalMoons(){let t=0;Object.values(moonsGot).forEach(a=>t+=a.length);return t}
+function totalUserCoins(){let t=0;Object.values(coinsGot).forEach(a=>t+=a.length);return t}
+function awardWin(d){
+  const isDaily = d.id===getDailyLevel().id && dailyClaimed!==todayStr();
+  const s=d.stars||0, mana=s*5+10, dia=d.diff==='Demon'?5:(d.platformer?3:1), keys=1+(d.diff==='Demon'?1:0);
+  currency.stars+=s; currency.mana+=mana; currency.diamonds+=dia; currency.keys+=keys; currency.userCoins+=totalUserCoins()>0?0:0;
+  stats.levelsBeaten++; stats.coinsTotal=totalUserCoins(); saveCurrency(); saveStats();
+  if(isDaily){currency.diamonds+=10; currency.mana+=50; dailyClaimed=todayStr(); store.set('dailyClaimed',dailyClaimed); toast('📅 Daily bonus! +10💎 +50 mana');}
+  if(versusActive){currency.diamonds+=5; versusResult='🏆 VERSUS WIN! You beat '+versusName+' — +5💎'; versusActive=false;}
+  else if(versusResult&&versusResult.indexOf('VERSUS')!==0) versusResult='';
+  return {stars:s,mana:mana,diamonds:dia,keys:keys};
+}
+function spawnConfetti(){for(let i=0;i<90;i++)parts.push({x:Math.random()*W,y:-20-Math.random()*80,vx:(Math.random()-0.5)*160,vy:80+Math.random()*220,life:2+Math.random(),t:0,color:['#facc15','#22d3ee','#f472b6','#4ade80','#a855f7'][i%5],s:5+Math.random()*7});}
+const ACHIEVEMENTS=[
+ {id:'first',name:'First Steps',desc:'Beat your first level',icon:'👣',test:()=>stats.levelsBeaten>=1},
+ {id:'five',name:'Rising Star',desc:'Beat 5 levels',icon:'⭐',test:()=>stats.levelsBeaten>=5},
+ {id:'ten',name:'Geometry Master',desc:'Beat 10 levels',icon:'👑',test:()=>stats.levelsBeaten>=10},
+ {id:'twenty',name:'Legend',desc:'Beat all 20 built-in levels',icon:'🏆',test:()=>stats.levelsBeaten>=20},
+ {id:'demon',name:'Demon Slayer',desc:'Beat a Demon level',icon:'😈',test:()=>LEVELS.some(l=>l.diff==='Demon'&&best[l.id]===100)},
+ {id:'plat',name:'Tower Climber',desc:'Beat a Platformer level',icon:'🌙',test:()=>LEVELS.some(l=>l.platformer&&best[l.id]===100)},
+ {id:'coins',name:'Coin Hunter',desc:'Collect 9 secret coins',icon:'🪙',test:()=>totalUserCoins()>=9},
+ {id:'jumps',name:'Jump Machine',desc:'Jump 1,000 times',icon:'🦘',test:()=>stats.jumps>=1000},
+ {id:'deaths',name:'Never Give Up',desc:'Die 100 times and keep going',icon:'💥',test:()=>stats.deaths>=100},
+ {id:'stars50',name:'Star Collector',desc:'Earn 50 stars',icon:'🌟',test:()=>totalStars()>=50},
+ {id:'rich',name:'Mana Rich',desc:'Hold 500 mana orbs',icon:'🔮',test:()=>currency.mana>=500},
+ {id:'daily',name:'Daily Grinder',desc:'Complete a Daily Level',icon:'📅',test:()=>dailyClaimed!==''},
+];
+function checkAchievements(){ACHIEVEMENTS.forEach(a=>{if(!achievementsUnlocked.includes(a.id)&&a.test()){achievementsUnlocked.push(a.id);store.set('achievements',achievementsUnlocked);toast('🏆 Achievement: '+a.name+' '+a.icon);sfx('win');}})}
+const SHOP_ITEMS=[
+ {id:'cube_default',name:'Default Cube',kind:'icon',icon:'■',cost:0,cur:'stars'},
+ {id:'icon_star',name:'Star Cube',kind:'icon',icon:'★',cost:10,cur:'stars',shape:'star'},
+ {id:'icon_heart',name:'Heart Cube',kind:'icon',icon:'♥',cost:15,cur:'stars',shape:'heart'},
+ {id:'icon_crown',name:'Crown Cube',kind:'icon',icon:'♛',cost:25,cur:'stars',shape:'crown'},
+ {id:'icon_diamond',name:'Diamond Cube',kind:'icon',icon:'◆',cost:40,cur:'mana',shape:'star'},
+ {id:'icon_ghost',name:'Ghost Cube',kind:'icon',icon:'👻',cost:30,cur:'mana',shape:'cube'},
+ {id:'color_gold',name:'Gold Colour',kind:'color',icon:'🟡',cost:20,cur:'stars',color:'#facc15'},
+ {id:'color_pink',name:'Pink Colour',kind:'color',icon:'🩷',cost:20,cur:'stars',color:'#f472b6'},
+ {id:'color_lime',name:'Lime Colour',kind:'color',icon:'🟢',cost:20,cur:'stars',color:'#4ade80'},
+ {id:'color_purple',name:'Purple Colour',kind:'color',icon:'🟣',cost:30,cur:'mana',color:'#a855f7'},
+ {id:'color_fire',name:'Fire Colour',kind:'color',icon:'🔥',cost:50,cur:'mana',color:'#fb923c'},
+ {id:'color_ice',name:'Ice Colour',kind:'color',icon:'🧊',cost:50,cur:'mana',color:'#7dd3fc'},
+ {id:'trail_rainbow',name:'Rainbow Trail',kind:'trail',icon:'🌈',cost:30,cur:'mana',trail:'#f472b6'},
+ {id:'trail_gold',name:'Gold Trail',kind:'trail',icon:'✨',cost:25,cur:'stars',trail:'#facc15'},
+ {id:'trail_fire',name:'Fire Trail',kind:'trail',icon:'🔥',cost:40,cur:'mana',trail:'#fb923c'},
+ {id:'trail_ice',name:'Ice Trail',kind:'trail',icon:'❄️',cost:40,cur:'mana',trail:'#7dd3fc'},
+ {id:'ship_gold',name:'Golden Ship',kind:'ship',icon:'🚢',cost:35,cur:'stars',shape:'ship'},
+ {id:'ball_gold',name:'Golden Ball',kind:'ball',icon:'⚽',cost:35,cur:'stars',shape:'ball'},
+ {id:'ufo_gold',name:'Golden UFO',kind:'ufo',icon:'🛸',cost:45,cur:'mana',shape:'ufo'},
+ {id:'wave_gold',name:'Golden Wave',kind:'wave',icon:'🌊',cost:45,cur:'mana',shape:'wave'},
+ {id:'robot_gold',name:'Golden Robot',kind:'robot',icon:'🤖',cost:50,cur:'mana',shape:'robot'},
+ {id:'spider_gold',name:'Golden Spider',kind:'spider',icon:'🕷️',cost:50,cur:'mana',shape:'spider'},
+ {id:'swing_gold',name:'Golden Swing',kind:'swing',icon:'🌀',cost:50,cur:'mana',shape:'swing'},
+ {id:'death_stars',name:'Star Death FX',kind:'death',icon:'💫',cost:20,cur:'stars',death:'stars'},
+ {id:'death_fire',name:'Fire Death FX',kind:'death',icon:'🔥',cost:30,cur:'mana',death:'fire'},
+ {id:'death_rainbow',name:'Rainbow Death FX',kind:'death',icon:'🌈',cost:60,cur:'diamonds',death:'rainbow'},
+];
+function buyShopItem(id){const it=SHOP_ITEMS.find(x=>x.id===id);if(!it)return;
+ if(shopOwned.includes(id)){equipShopItem(id);toast('Equipped '+it.name);return;}
+ if(currency[it.cur]<it.cost){toast('Not enough '+it.cur+' — need '+it.cost);return;}
+ currency[it.cur]-=it.cost; shopOwned.push(id); store.set('shopOwned',shopOwned); saveCurrency(); equipShopItem(id); toast('🛒 Bought '+it.name+'!'); showShop();}
+function equipShopItem(id){const it=SHOP_ITEMS.find(x=>x.id===id);if(!it||!shopOwned.includes(id))return;
+ if(it.shape)icon.shape=it.shape; if(it.color){icon.color=it.color;icon.trail=it.color;} if(it.trail)icon.trail=it.trail; if(it.death)icon.death=it.death; store.set('icon',icon);}
+const GAUNTLETS=[
+ {id:'fire',name:'🔥 Fire Gauntlet',levels:['ember','lava','beat4'],reward:'+20💎 +100 mana'},
+ {id:'ice',name:'❄️ Ice Gauntlet',levels:['frost','beat8','aurora'],reward:'+20💎 +100 mana'},
+ {id:'poison',name:'☠️ Poison Gauntlet',levels:['toxic','beat3','beat7'],reward:'+25💎 +120 mana'},
+ {id:'shadow',name:'🌑 Shadow Gauntlet',levels:['shadow','beat5','midnight'],reward:'+30💎 +150 mana'},
+ {id:'lava',name:'🌋 Lava Gauntlet',levels:['lava','beat9','crystal'],reward:'+40💎 +200 mana'},
+];
+const MAP_PACKS=[
+ {id:'pack1',name:'Starter Pack',levels:['beat1','ember','beat2'],reward:'+10💎'},
+ {id:'pack2',name:'Adventure Pack',levels:['beat3','frost','toxic'],reward:'+15💎'},
+ {id:'pack3',name:'Extreme Pack',levels:['beat4','shadow','beat5'],reward:'+20💎'},
+ {id:'pack4',name:'Demon Pack',levels:['beat9','crystal','midnight'],reward:'+50💎'},
+ {id:'pack5',name:'Tower Pack',levels:['plat1','sky','deep'],reward:'+25💎'},
+];
+function packDone(levels){return levels.every(id=>best[id]===100)}
+function claimPackReward(pid){const pk=MAP_PACKS.find(x=>x.id===pid)||GAUNTLETS.find(x=>x.id===pid);if(!pk)return;if(!packDone(pk.levels)){toast('Finish all levels in this pack first!');return;}const claimed=store.get('claimedPacks',{});if(claimed[pid]){toast('Reward already claimed');return;}claimed[pid]=true;store.set('claimedPacks',claimed);currency.diamonds+=20;currency.mana+=100;saveCurrency();toast('🎁 Pack reward claimed! +20💎 +100 mana');}
+function todayStr(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function dailySeed(dateStr){let h=0;for(let i=0;i<dateStr.length;i++)h=(h*31+dateStr.charCodeAt(i))>>>0;return h}
+function getDailyLevel(dateStr){const ds=dateStr||todayStr();const built=LEVELS.filter(l=>!l.custom);return built[dailySeed(ds)%built.length]}
+function dailyCountdown(){const now=new Date();const mid=new Date(now);mid.setHours(24,0,0,0);const ms=mid-now;const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s2=Math.floor(ms%60000/1000);return h+'h '+String(m).padStart(2,'0')+'m '+String(s2).padStart(2,'0')+'s'}
+function startVersus(i){const d=LEVELS[i];versusActive=true;versusGhost=0;versusName=['Ghost Rider','Shadow Bot','Turbo AI','Neon Rival'][Math.floor(Math.random()*4)];const est=(d.len||8000)/430;versusSpeed=100/(est*1.05);versusResult='';toast('⚔️ VERSUS: race '+versusName+'! First to finish wins!');loadLevel(i,false);}
+function showIntro(i,prac){const l=LEVELS[i];state='menu';playing=false;$('menu').style.display='flex';$('panel').innerHTML=`<div class="introcard panel" style="border-color:${l.color}"><h1 style="font-size:36px">${l.name}</h1><p class="sub">${l.diff} • ${l.platformer?(l.moons||3)+'🌙 Moons':l.stars+'★'} • ${l.bpm} BPM • ${l.platformer?'Platformer':(l.len<7000?'Short':l.len<10000?'Medium':'Long')}</p><p>${l.desc}</p><p class="small">Best: ${best[l.id]||0}% • Attempts: ${attempts[l.id]||0} • Coins: ${(coinsGot[l.id]||[]).length}/3</p><div class="row"><button onclick="loadLevel(${i},${!!prac})">▶ Start Level</button><button class="alt" onclick="startVersus(${i})">⚔️ Versus Race</button><button class="ghost" onclick="showMenu()">← Back</button></div></div>`;}
+function showPauseMenu(){if(state!=='paused')return;$('menu').style.display='flex';$('panel').innerHTML=`<h1>⏸ PAUSED</h1><p class="sub">${def?def.name:''} • ${Math.floor(progress)}% • Attempt ${attempt}</p><div class="row"><button onclick="resumeGame()">▶ Resume</button><button onclick="loadLevel(levelIdx,practice)">↻ Restart</button><button onclick="loadLevel(levelIdx,true)">✦ Practice</button><button class="ghost" onclick="exitToMenu()">☰ Exit to Menu</button></div><p class="small">Settings: shake ${settings.shake?'on':'off'} • FPS ${settings.showFPS?'on':'off'} • music ${Math.round(settings.musicVol*100)}%</p>`;}
+function resumeGame(){$('menu').style.display='none';state='playing';playing=true;if(def)startMusic(def);}
+function exitToMenu(){versusActive=false;showMenu();}
+function setSetting(k,v){settings[k]=v;saveSettings();if(master)master.gain.value=muted?0:settings.musicVol;if(state==='menu')showMenu();else if(state==='paused')showPauseMenu();}
+
 </script>
 <script>
 /* ---------- LEVEL BUILDER ---------- */
@@ -172,11 +310,11 @@ function buildLevel(def){
     if(def.id!=='beat1'&&def.id!=='beat2'&&x>3200&&!o.portals.some(p=>p.type==='mode'&&p.val==='ball')){portal(x,'mode','ball');portal(x+60,'grav',-1);spike(x+200);x+=380;portal(x+220,'grav',1);portal(x+280,'mode','cube');x+=500;step++;continue}
     if((def.id==='beat3'||def.id==='beat4'||def.id==='beat5')&&x>5200&&!o.portals.some(p=>p.type==='mode'&&p.val==='ufo')){portal(x,'mode','ufo');spike(x+220);spike(x+420);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
     if((def.id==='beat4'||def.id==='beat5')&&x>7000&&!o.portals.some(p=>p.type==='mode'&&p.val==='wave')){portal(x,'mode','wave');saw(x+250,GROUND-200);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
-    if((def.id==='beat6'||def.id==='beat9')&&x>1500&&!o.portals.some(p=>p.type==='mode'&&p.val==='robot')){portal(x,'mode','robot');spike(x+220);spike(x+420);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
-    if((def.id==='beat7'||def.id==='beat9')&&x>3200&&!o.portals.some(p=>p.type==='mode'&&p.val==='spider')){portal(x,'mode','spider');spike(x+200);x+=380;portal(x+220,'mode','cube');x+=500;step++;continue}
-    if((def.id==='beat8'||def.id==='beat9')&&x>5200&&!o.portals.some(p=>p.type==='mode'&&p.val==='swing')){portal(x,'mode','swing');saw(x+250,GROUND-200);saw(x+450,GROUND-120);x+=680;portal(x+80,'mode','cube');x+=500;step++;continue}
-    if(def.id==='beat9'&&x>8000&&!o.duals.length){dual(x);spike(x+240);x+=420;dual(x+80);portal(x+160,'mode','cube');x+=500;step++;continue}
-    if((def.id==='beat8'||def.id==='beat9')&&step%11===5){portal(x,'freefly',1);saw(x+200,GROUND-140);x+=380;portal(x+120,'freefly',0);x+=420;step++;continue}
+    if((def.id==='beat6'||isDemonLevel(def))&&x>1500&&!o.portals.some(p=>p.type==='mode'&&p.val==='robot')){portal(x,'mode','robot');spike(x+220);spike(x+420);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
+    if((def.id==='beat7'||isDemonLevel(def))&&x>3200&&!o.portals.some(p=>p.type==='mode'&&p.val==='spider')){portal(x,'mode','spider');spike(x+200);x+=380;portal(x+220,'mode','cube');x+=500;step++;continue}
+    if((def.id==='beat8'||isDemonLevel(def))&&x>5200&&!o.portals.some(p=>p.type==='mode'&&p.val==='swing')){portal(x,'mode','swing');saw(x+250,GROUND-200);saw(x+450,GROUND-120);x+=680;portal(x+80,'mode','cube');x+=500;step++;continue}
+    if(isDemonLevel(def)&&x>8000&&!o.duals.length){dual(x);spike(x+240);x+=420;dual(x+80);portal(x+160,'mode','cube');x+=500;step++;continue}
+    if(((def.id==='beat8'||isDemonLevel(def))&&step%11===5)){portal(x,'freefly',1);saw(x+200,GROUND-140);x+=380;portal(x+120,'freefly',0);x+=420;step++;continue}
     if(def.id==='beat4'||def.id==='beat5'){ if(step%7===3){portal(x,'speed',1.35);spike(x+200);x+=360;portal(x+140,'speed',1);x+=420;step++;continue} }
     if(def.id==='beat5'&&step%5===2){portal(x,'grav',-1);spike(x+160);x+=320;portal(x+40,'grav',1);x+=260;step++;continue}
     if(def.id!=='beat1'&&step%9===4){portal(x,'size',0.7);spike(x+160);x+=300;portal(x+80,'size',1);x+=360;step++;continue}
@@ -217,8 +355,8 @@ function buildPlatformer(def){
 }
 /* ---------- AUDIO: original WebAudio beat tracks ---------- */
 let AC=null,master=null,musicTimer=null,beatCount=0,curLevel=null;
-function audio(){if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=muted?0:0.35;master.connect(AC.destination)}if(AC.state==='suspended')AC.resume();return AC}
-function tone(f,t,d,type='square',vol=0.2){if(!AC||muted)return;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+0.02)}
+function audio(){if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=muted?0:(typeof settings!=='undefined'?settings.musicVol:0.35);master.connect(AC.destination)}if(AC.state==='suspended')AC.resume();return AC}
+function tone(f,t,d,type='square',vol=0.2){if(!AC||muted)return; if(typeof settings!=='undefined')vol=vol*settings.sfxVol;const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+0.02)}
 function sfx(name){if(muted)return;try{audio();const t=AC.currentTime;
   if(name==='jump')tone(300,t,0.12,'square',0.15);
   else if(name==='die'){tone(220,t,0.25,'sawtooth',0.25);tone(110,t+0.05,0.3,'sawtooth',0.2)}
@@ -229,7 +367,7 @@ function sfx(name){if(muted)return;try{audio();const t=AC.currentTime;
   else if(name==='orb'){tone(1200,t,0.12,'sine',0.25);tone(1800,t+0.06,0.15,'sine',0.2)}
   else if(name==='spider'){tone(900,t,0.08,'square',0.2);tone(300,t+0.05,0.1,'square',0.2)}
 }catch(e){}}
-const SCALES={beat1:[0,3,5,7,10],beat2:[0,2,3,7,8],beat3:[0,3,5,6,10],beat4:[0,2,5,7,9],beat5:[0,1,3,6,8],beat6:[0,2,3,7,10],beat7:[0,1,5,7,8],beat8:[0,3,5,7,9],beat9:[0,1,3,6,10],plat1:[0,3,5,7,10]};
+const SCALES={beat1:[0,3,5,7,10],beat2:[0,2,3,7,8],beat3:[0,3,5,6,10],beat4:[0,2,5,7,9],beat5:[0,1,3,6,8],beat6:[0,2,3,7,10],beat7:[0,1,5,7,8],beat8:[0,3,5,7,9],beat9:[0,1,3,6,10],plat1:[0,3,5,7,10],ember:[0,3,5,7,10],frost:[0,2,5,7,9],toxic:[0,1,3,6,8],shadow:[0,3,5,6,10],lava:[0,1,3,6,10],crystal:[0,1,3,6,8],midnight:[0,2,3,7,8],sky:[0,3,5,7,10],deep:[0,3,5,7,9],aurora:[0,2,5,7,10]};
 function startMusic(level){stopMusic();curLevel=level;audio();const base=220*Math.pow(2,(LEVELS.indexOf(level)-2)*0.5);const spb=60/level.bpm/2;beatCount=0;
   const scale=SCALES[level.id]||SCALES.beat1;
   musicTimer=setInterval(()=>{if(muted||!playing&&state!=='playing')return;const t=AC.currentTime+0.05;const b=beatCount++;
@@ -279,7 +417,7 @@ function respawn(){
   updateHUD();
 }
 function die(){
-  if(dead||win)return; dead=true; playing=false; deadT=0; shake=12; sfx('die'); stopMusic();
+  if(dead||win)return; dead=true; playing=false; deadT=0; shake=settings.shake?12:0; sfx('die'); stopMusic(); stats.deaths++; combo=0; saveStats(); checkAchievements();
   burst(px+PLAYER/2,py+PLAYER/2,icon.color,26);
   const p=Math.floor(progress); if(p>(best[def.id]||0)){best[def.id]=p;store.set('best',best);}
 }
@@ -290,7 +428,7 @@ function winLevel(){
   else { best[def.id]=100; store.set('best',best); }
   const newly=SHAPES.filter(s=>s.need===def.id&&!unlocked.includes(s.id));
   newly.forEach(s=>unlocked.push(s.id)); if(newly.length)store.set('unlocked',unlocked);
-  burst(px,py,'#facc15',40);
+  burst(px,py,'#facc15',40); spawnConfetti(); const _rw=awardWin(def); checkAchievements();
   setTimeout(()=>{showMenu('win',newly)},900);
 }
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2200)}
@@ -303,7 +441,7 @@ function spiderTeleport(){
 /* ---------- INPUT ---------- */
 function press(down){
   if(state!=='playing')return;
-  if(down){jumpBuf=0.12; audio();}
+  if(down){jumpBuf=0.12; audio(); stats.jumps++; if(stats.jumps%50===0)saveStats(); combo++; }
   holding=down;
   if(down){
     // Orbs first (mid-air, like the real game): tap near an orb to trigger it
@@ -372,6 +510,8 @@ function updatePlatformer(dt){
 }
 function update(dt){
   if(state!=='playing'||!playing)return;
+  stats.playTime=(stats.playTime||0)+dt;
+  if(versusActive&&!def.platformer){versusGhost=Math.min(100,versusGhost+versusSpeed*dt); if(versusGhost>=100){versusActive=false; playing=false; versusResult='💔 '+versusName+' won the race!'; stopMusic(); setTimeout(()=>showMenu('versusLose'),600); return;}}
   pulse+=dt; if(jumpBuf>0)jumpBuf-=dt; if(ringCooldown>0)ringCooldown-=dt;
   if(def&&def.platformer){ updatePlatformer(dt); return; }
   const size=PLAYER*sizeMul, speed=SPEED*speedMul;
@@ -468,10 +608,10 @@ function draw(){
   // pulsing glow orbs + grid
   ctx.globalAlpha=0.25; ctx.fillStyle=def?def.color:'#22d3ee';
   for(let i=0;i<5;i++){const gx=((i*260-camX*0.3)%(W+200)+W+200)%(W+200)-100, gy=80+i*70; ctx.beginPath();ctx.arc(gx,gy,40*beatPulse,0,7);ctx.fill()}
-  ctx.globalAlpha=0.12; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
+  if(!settings.lowDetail){ctx.globalAlpha=0.12; ctx.strokeStyle='#fff'; ctx.lineWidth=1;
   for(let x=0;x<W;x+=48){const sx=x-((camX)%48);ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,H);ctx.stroke()}
   for(let y=0;y<H;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
-  ctx.globalAlpha=1;
+  } ctx.globalAlpha=1;
   // distant blocks silhouette
   ctx.fillStyle='rgba(255,255,255,0.05)';
   for(let i=0;i<12;i++){const bx=((i*190-camX*0.5)%(W+200)+W+200)%(W+200)-100;ctx.fillRect(bx,300+((i*37)%120),90,200)}
@@ -530,6 +670,10 @@ function draw(){
   // particles
   for(const p of parts){ctx.globalAlpha=1-p.t/p.life;ctx.fillStyle=p.color;ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s)}ctx.globalAlpha=1;
   ctx.restore();
+  if(settings.showFPS){ctx.fillStyle='#fff';ctx.font='bold 14px Arial';ctx.textAlign='left';ctx.fillText('FPS: '+fpsVal,12,22);ctx.fillText('Combo: '+combo,12,42);}
+  if(combo>=3){ctx.fillStyle='#facc15';ctx.font='bold 20px Arial';ctx.textAlign='right';ctx.fillText('🔥 COMBO x'+combo,W-16,32);ctx.textAlign='left';}
+  if(versusActive){ctx.fillStyle='#f472b6';ctx.font='bold 16px Arial';ctx.fillText('⚔️ VS '+versusName+': '+Math.floor(versusGhost)+'%  •  You: '+Math.floor(progress)+'%',12,64);ctx.fillStyle='#334155';ctx.fillRect(12,72,220,10);ctx.fillStyle='#f472b6';ctx.fillRect(12,72,220*versusGhost/100,10);ctx.fillStyle='#22d3ee';ctx.fillRect(12,86,220*progress/100,10);}
+  if(!settings.lowDetail&&speedMul>1){ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;for(let i=0;i<8;i++){const ly=(i*67+performance.now()/8)%H;ctx.beginPath();ctx.moveTo(W-40,ly);ctx.lineTo(W-140,ly);ctx.stroke();}}
   // death / win overlay text
   if(dead){ctx.fillStyle='rgba(0,0,0,.45)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#f87171';ctx.font='bold 52px Arial';ctx.textAlign='center';ctx.fillText('💥 CRASHED!',W/2,H/2-10);ctx.fillStyle='#fff';ctx.font='20px Arial';ctx.fillText(Math.floor(progress)+'% — '+(practice?'respawning at checkpoint…':'tap / Space to retry'),W/2,H/2+30);ctx.textAlign='left'}
   if(win){ctx.fillStyle='#facc15';ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.fillText('★ LEVEL COMPLETE! ★',W/2,H/2);ctx.textAlign='left'}
@@ -563,7 +707,7 @@ function drawPlatformer(){
 }
 /* ---------- LOOP ---------- */
 let last=performance.now();
-function loop(now){const dt=Math.min(0.033,(now-last)/1000);last=now;
+function loop(now){const dt=Math.min(0.033,(now-last)/1000);last=now; fpsFrames++; if(now-fpsLast>=500){fpsVal=Math.round(fpsFrames*1000/(now-fpsLast)); fpsFrames=0; fpsLast=now;}
   if(dead){deadT+=dt;if(deadT>0.9)respawn()}
   if(state==='playing')update(dt);
   parts.forEach(p=>{p.t+=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=500*dt});parts=parts.filter(p=>p.t<p.life);
@@ -599,7 +743,8 @@ window.editorClear=function(){ editorPushUndo(); editorData=freshEditorData(); l
 window.editorExit=function(){ document.getElementById('editorBar').style.display='none'; showMenu(); };
 window.editorSave=function(){
   const name=(document.getElementById('edName').value||'My Level').trim();
-  const defObj={id: editorEditing>=0?customLevels[editorEditing].id:'custom_'+Date.now(), name, diff:'Custom', stars:3, color:'#22d3ee', bg:'#0a0a2e', bpm:120, len:5200, seed:0, custom:true, objects:JSON.parse(JSON.stringify(editorData))};
+  const _lenSel=(document.getElementById('edLength')||{}).value||'medium'; const _len={short:4000,medium:5200,long:8000,xl:11000}[_lenSel]||5200;
+  const defObj={id: editorEditing>=0?customLevels[editorEditing].id:'custom_'+Date.now(), name, diff:'Custom', stars:3, color:'#22d3ee', bg:(document.getElementById('edBg')||{}).value||'#0a0a2e', bpm:parseInt((document.getElementById('edTempo')||{}).value||'120',10)||120, len:_len, seed:0, custom:true, featured:!!(document.getElementById('edFeatured')||{}).checked, objects:JSON.parse(JSON.stringify(editorData))};
   if(editorEditing>=0) customLevels[editorEditing]=defObj; else customLevels.push(defObj);
   saveCustomLevels(); toast('💾 Saved "'+name+'" to My Levels'); document.getElementById('editorBar').style.display='none'; showMenu();
 };
@@ -623,11 +768,14 @@ window.editorImport=function(){
 window.playCustom=function(i){ const idx=LEVELS.findIndex(l=>l.id===customLevels[i].id); if(idx>=0) loadLevel(idx,false); };
 window.editCustom=function(i){ showEditor(i); };
 window.deleteCustom=function(i){ if(confirm('Delete "'+customLevels[i].name+'"?')){ customLevels.splice(i,1); saveCustomLevels(); showMenu(); } };
+window.editorCopy=function(){editorClipboard=JSON.parse(JSON.stringify(editorData));toast('📋 Copied '+Object.values(editorData).flat().length+' objects');};
+window.editorPaste=function(){if(!editorClipboard){toast('Nothing copied yet');return;}editorPushUndo();for(const k of Object.keys(editorClipboard)){if(Array.isArray(editorClipboard[k]))editorData[k]=(editorData[k]||[]).concat(JSON.parse(JSON.stringify(editorClipboard[k])));}level=editorLevelFromData();toast('📄 Pasted!');};
 function editorPlace(e){
   const rect=canvas.getBoundingClientRect();
   const wx=editorCamX+(e.clientX-rect.left)*(canvas.width/rect.width);
   const wy=(e.clientY-rect.top)*(canvas.height/rect.height);
-  const sx=Math.round(wx/36)*36, sy=Math.round(wy/36)*36;
+  const _snap=(document.getElementById('edSnap')||{}).value!=='off';
+  const sx=_snap?Math.round(wx/36)*36:Math.round(wx/6)*6, sy=_snap?Math.round(wy/36)*36:Math.round(wy/6)*6;
   editorPushUndo();
   if(editorTool==='erase'){
     const lists=['spikes','blocks','saws','pads','rings','coins','portals','checks','orbs','duals'];
@@ -653,31 +801,61 @@ function editorPlace(e){
 }
 /* ---------- LEVEL SEARCH ---------- */
 let currentSearch='';
+let currentFilters={diff:'',stars:'',len:'',sort:''};
 window.filterLevels=function(q){
-  currentSearch=(q||'').toLowerCase().trim();
-  const cards=document.querySelectorAll('#panel .lvl');
+  if(typeof q==='string') currentSearch=q.toLowerCase().trim();
+  const fd=document.getElementById('fltDiff'), fs=document.getElementById('fltStars'), fl=document.getElementById('fltLen'), fo=document.getElementById('fltSort');
+  currentFilters={diff:fd?fd.value:'',stars:fs?fs.value:'',len:fl?fl.value:'',sort:fo?fo.value:''};
+  const cards=[...document.querySelectorAll('#panel .lvl')];
   let visible=0;
-  cards.forEach(c=>{ const t=(c.textContent||'').toLowerCase(); const hit=!currentSearch||t.includes(currentSearch); c.style.display=hit?'':'none'; if(hit)visible++; });
+  const order={Easy:0,Normal:1,Hard:2,Harder:3,Insane:4,Demon:5,Platformer:6,Custom:7};
+  cards.forEach(c=>{ const t=(c.textContent||'').toLowerCase(); let hit=!currentSearch||t.includes(currentSearch);
+    if(currentFilters.diff&&c.dataset.diff!==currentFilters.diff)hit=false;
+    if(currentFilters.stars&&parseInt(c.dataset.stars||'0',10)<parseInt(currentFilters.stars,10))hit=false;
+    if(currentFilters.len&&c.dataset.len!==currentFilters.len)hit=false;
+    c.style.display=hit?'':'none'; if(hit)visible++; });
+  const list=document.getElementById('lvlList');
+  if(list&&currentFilters.sort){
+    const vis=cards.filter(c=>c.style.display!=='none'), hid=cards.filter(c=>c.style.display==='none');
+    vis.sort((a,b)=> currentFilters.sort==='name'?a.dataset.name.localeCompare(b.dataset.name) : currentFilters.sort==='stars'?parseInt(b.dataset.stars||0)-parseInt(a.dataset.stars||0) : currentFilters.sort==='best'?parseInt(b.dataset.best||0)-parseInt(a.dataset.best||0) : (order[a.dataset.diff]??9)-(order[b.dataset.diff]??9));
+    vis.concat(hid).forEach(c=>list.appendChild(c));
+  }
   const no=document.getElementById('noLevels'); if(no) no.style.display=visible?'none':'block';
   return visible;
 };
 window.clearSearch=function(){ currentSearch=''; const inp=document.getElementById('lvlSearch'); if(inp) inp.value=''; window.filterLevels(''); };
 /* ---------- MENU / UI ---------- */
+window.showShop=function(){state='menu';playing=false;$('menu').style.display='flex';$('panel').innerHTML=`<h1>🛒 ICON SHOP</h1><div class="currbar">⭐ ${totalStars()}★ 🔮 ${currency.mana} mana 💎 ${currency.diamonds} 🔑 ${currency.keys} keys</div><p class="sub">Buy with stars / mana / diamonds earned by beating levels. Tap an owned item to equip it.</p><div class="shopgrid">${SHOP_ITEMS.map(it=>`<div class="shopitem ${shopOwned.includes(it.id)?'owned':''}" onclick="buyShopItem('${it.id}')"><div style="font-size:28px">${it.icon}</div><b>${it.name}</b><br><span class="small">${it.kind} • ${shopOwned.includes(it.id)?'✅ Owned — tap to equip':it.cost+' '+it.cur}</span></div>`).join('')}</div><div class="row"><button onclick="showMenu()">← Back to Levels</button></div>`;};
+window.showTreasure=function(){state='menu';playing=false;$('menu').style.display='flex';const chests=[[10,'Small Chest','+30 mana, +1💎'],[25,'Medium Chest','+80 mana, +3💎'],[50,'Large Chest','+150 mana, +5💎, random icon'],[100,'Grand Chest','+300 mana, +10💎, rare icon']];$('panel').innerHTML=`<h1>💰 TREASURE ROOM</h1><p class="sub">You have 🔑 ${currency.keys} keys — earn keys by beating levels.</p><div class="shopgrid">${chests.map(c=>`<div class="shopitem" onclick="openChest(${c[0]})"><div style="font-size:32px">🎁</div><b>${c[1]} — ${c[0]} keys</b><br><span class="small">${c[2]}</span></div>`).join('')}</div><div class="row"><button onclick="showMenu()">← Back</button></div>`;};
+window.openChest=function(cost){if(currency.keys<cost){toast('Need '+cost+' keys — beat more levels!');return;}currency.keys-=cost;currency.mana+=cost*3;currency.diamonds+=Math.floor(cost/10);const unowned=SHOP_ITEMS.filter(i=>!shopOwned.includes(i.id));if(cost>=50&&unowned.length){const pick=unowned[Math.floor(Math.random()*unowned.length)];shopOwned.push(pick.id);store.set('shopOwned',shopOwned);toast('🎁 Chest opened! +'+(cost*3)+' mana, +'+Math.floor(cost/10)+'💎, unlocked '+pick.name+'!');}else toast('🎁 Chest opened! +'+(cost*3)+' mana, +'+Math.floor(cost/10)+'💎');saveCurrency();showTreasure();};
+window.showGauntlets=function(){state='menu';playing=false;$('menu').style.display='flex';const row=(g,isG)=>`<div class="ach ${packDone(g.levels)?'unlocked':''}"><div style="flex:1"><b>${g.name}</b><br><span class="small">${g.levels.map(id=>{const l=LEVELS.find(x=>x.id===id);return l?l.name+(best[id]===100?' ✅':''):id}).join(' • ')}</span><br><span class="small">Reward: ${g.reward}</span></div><button onclick="claimPackReward('${g.id}')">🎁 Claim</button></div>`;$('panel').innerHTML=`<h1>🏆 GAUNTLETS &amp; MAP PACKS</h1><p class="sub">Complete every level in a gauntlet or pack, then claim its reward.</p><h3>Gauntlets</h3>${GAUNTLETS.map(g=>row(g,true)).join('')}<h3>Map Packs (3 levels each)</h3>${MAP_PACKS.map(g=>row(g,false)).join('')}<div class="row"><button onclick="showMenu()">← Back</button></div>`;};
+window.showDaily=function(){state='menu';playing=false;$('menu').style.display='flex';const d=getDailyLevel();const idx=LEVELS.findIndex(l=>l.id===d.id);$('panel').innerHTML=`<h1>📅 DAILY LEVEL</h1><p class="sub">Today: ${todayStr()} • changes at midnight • next daily in <b id="dailyTimer">${dailyCountdown()}</b></p><div class="lvl" style="cursor:pointer" onclick="loadLevel(${idx},false)"><span class="diff" style="color:${DIFFC[d.diff]}">${d.diff}</span><b>${d.name}</b><br><span class="stars">${d.stars}★</span><br><span class="small">${d.desc}</span><br><span class="small">Best: ${best[d.id]||0}% • Reward if beaten today: +10💎 +50 mana ${dailyClaimed===todayStr()?'✅ claimed':''}</span></div><div class="row"><button onclick="loadLevel(${idx},false)">▶ Play Daily Level</button><button onclick="showMenu()">← Back</button></div>`;};
+window.showVersusMenu=function(){state='menu';playing=false;$('menu').style.display='flex';$('panel').innerHTML=`<h1>⚔️ VERSUS / RACE MODE</h1><p class="sub">Race a ghost AI side-by-side through a level. First to 100% wins — win for +5💎.</p><div class="levels">${LEVELS.filter(l=>!l.platformer&&!l.custom).slice(0,10).map(l=>{const i=LEVELS.indexOf(l);return `<div class="lvl" onclick="startVersus(${i})"><span class="diff" style="color:${DIFFC[l.diff]}">${l.diff}</span><b>${l.name}</b><br><span class="small">${l.stars}★ • ${l.bpm} BPM — tap to race!</span></div>`}).join('')}</div><div class="row"><button onclick="showMenu()">← Back</button></div>`;};
+window.showStatsPage=function(){state='menu';playing=false;$('menu').style.display='flex';const mins=Math.floor(stats.playTime/60);$('panel').innerHTML=`<h1>📊 YOUR STATS</h1><div class="statgrid"><div class="statbox">⭐<br><b>${totalStars()}</b><br><span class="small">Total stars</span></div><div class="statbox">🔮<br><b>${currency.mana}</b><br><span class="small">Mana orbs</span></div><div class="statbox">💎<br><b>${currency.diamonds}</b><br><span class="small">Diamonds</span></div><div class="statbox">🌙<br><b>${totalMoons()}</b><br><span class="small">Moons</span></div><div class="statbox">🔑<br><b>${currency.keys}</b><br><span class="small">Keys</span></div><div class="statbox">🪙<br><b>${totalUserCoins()}</b><br><span class="small">User coins</span></div><div class="statbox">🎮<br><b>${stats.levelsBeaten}</b><br><span class="small">Levels beaten</span></div><div class="statbox">🦘<br><b>${stats.jumps}</b><br><span class="small">Total jumps</span></div><div class="statbox">💥<br><b>${stats.deaths}</b><br><span class="small">Total deaths</span></div><div class="statbox">⏱️<br><b>${mins} min</b><br><span class="small">Play time</span></div><div class="statbox">🎯<br><b>${Object.values(attempts).reduce((a,b)=>a+b,0)}</b><br><span class="small">Total attempts</span></div><div class="statbox">🏆<br><b>${achievementsUnlocked.length}/${ACHIEVEMENTS.length}</b><br><span class="small">Achievements</span></div></div><div class="row"><button onclick="showMenu()">← Back</button></div>`;};
+window.showAchievements=function(){state='menu';playing=false;$('menu').style.display='flex';$('panel').innerHTML=`<h1>🏅 ACHIEVEMENTS</h1><p class="sub">${achievementsUnlocked.length}/${ACHIEVEMENTS.length} unlocked</p>${ACHIEVEMENTS.map(a=>`<div class="ach ${achievementsUnlocked.includes(a.id)?'unlocked':''}"><span style="font-size:28px">${a.icon}</span><div><b>${a.name}</b><br><span class="small">${a.desc}</span></div><span style="margin-left:auto">${achievementsUnlocked.includes(a.id)?'✅':'🔒'}</span></div>`).join('')}<div class="row"><button onclick="showMenu()">← Back</button></div>`;};
+window.showSettings=function(){state='menu';playing=false;$('menu').style.display='flex';$('panel').innerHTML=`<h1>⚙️ SETTINGS</h1><div style="text-align:left;max-width:520px;margin:0 auto"><p>🎵 Music volume: <input type="range" min="0" max="100" value="${Math.round(settings.musicVol*100)}" oninput="setSetting('musicVol',this.value/100)"> ${Math.round(settings.musicVol*100)}%</p><p>🔊 SFX volume: <input type="range" min="0" max="100" value="${Math.round(settings.sfxVol*100)}" oninput="setSetting('sfxVol',this.value/100)"> ${Math.round(settings.sfxVol*100)}%</p><p>📳 Screen shake: <button onclick="setSetting('shake',!settings.shake)">${settings.shake?'✅ On':'❌ Off'}</button></p><p>📈 Show FPS: <button onclick="setSetting('showFPS',!settings.showFPS)">${settings.showFPS?'✅ On':'❌ Off'}</button></p><p>⚡ Low-detail mode (faster): <button onclick="setSetting('lowDetail',!settings.lowDetail)">${settings.lowDetail?'✅ On':'❌ Off'}</button></p><p>🔊 Sound: <button onclick="toggleMute()">${muted?'🔇 Muted':'🔊 On'}</button></p></div><div class="row"><button onclick="showMenu()">← Back</button></div>`;};
 function showMenu(kind,newly){
   state='menu'; playing=false; stopMusic(); $('menu').style.display='flex';
   const p=$('panel');
+  if(kind==='versusLose'){
+    p.innerHTML=`<h1>💔 VERSUS LOST</h1><p class="sub">${versusResult} You reached ${Math.floor(progress)}% — race again!</p><div class="row"><button onclick="startVersus(levelIdx)">⚔️ Rematch</button><button class="alt" onclick="showMenu()">Level Select</button></div>`;
+    return;
+  }
   if(kind==='win'){
-    p.innerHTML=`<h1>★ LEVEL COMPLETE! ★</h1><p class="sub">${def.name} beaten — ${def.platformer?platMoons(def.id).length+'🌙 Moons':def.stars+'★'} earned • ${attempt} attempts • ${def.platformer?'':(coinsGot[def.id]||[]).length+'/3 coins'}</p>
+    p.innerHTML=`<h1>★ LEVEL COMPLETE! ★</h1><p class="sub">${def.name} beaten — ${def.platformer?platMoons(def.id).length+'🌙 Moons':def.stars+'★'} earned • ${attempt} attempts • ${def.platformer?'':(coinsGot[def.id]||[]).length+'/3 coins'}</p><p>🎉 Rewards: +${def.stars||0}★ +${(def.stars||0)*5+10} mana +${def.diff==='Demon'?5:(def.platformer?3:1)}💎 +${def.diff==='Demon'?2:1}🔑 ${versusResult?'<br>'+versusResult:''}</p><p style="font-size:28px">🎊🎉🎊</p>
     ${newly&&newly.length?`<p>🎉 New icon unlocked: <b>${newly.map(s=>s.name).join(', ')}</b></p>`:''}
     <div class="row"><button onclick="nextLevel()">▶ Next Level</button><button class="alt" onclick="showMenu()">Level Select</button></div>`;
     return;
   }
   p.innerHTML=`<h1>⬢ GEOMETRY DASH</h1><div class="sub">FULL VERSION — fan tribute • original levels, music &amp; art • no official assets</div>
-  <h2>🎮 Choose a Level</h2>
+  <div class="currbar">⭐ ${totalStars()}★ &nbsp; 🔮 ${currency.mana} mana &nbsp; 💎 ${currency.diamonds} &nbsp; 🔑 ${currency.keys} keys &nbsp; 🪙 ${totalUserCoins()} coins &nbsp; 🌙 ${totalMoons()} moons &nbsp; 🏆 ${achievementsUnlocked.length}/${ACHIEVEMENTS.length}</div>
+  <div class="tabs"><button onclick="showShop()">🛒 Icon Shop</button><button onclick="showTreasure()">💰 Treasure Room</button><button onclick="showGauntlets()">🏆 Gauntlets &amp; Packs</button><button onclick="showDaily()">📅 Daily Level</button><button onclick="showVersusMenu()">⚔️ Versus</button><button onclick="showStatsPage()">📊 Stats</button><button onclick="showAchievements()">🏅 Achievements</button><button onclick="showSettings()">⚙️ Settings</button></div>
+  <h2>🎮 Choose a Level — ${LEVELS.filter(l=>!l.custom).length} built-in levels</h2>
   <div class="row" style="margin:6px 0 2px"><input id="lvlSearch" placeholder="🔍 Search levels — name or difficulty (Easy, Demon…)" value="" oninput="filterLevels(this.value)" style="flex:1;min-width:220px;max-width:520px;padding:10px 14px;border-radius:99px;border:2px solid #22d3ee;background:#0f172a;color:#fff;font:700 14px 'Segoe UI',Arial,sans-serif"><button class="ghost" onclick="clearSearch()">✖ Clear</button></div>
+  <div class="row" style="margin:4px 0"><select id="fltDiff" onchange="filterLevels()"><option value="">All difficulties</option><option>Easy</option><option>Normal</option><option>Hard</option><option>Harder</option><option>Insane</option><option>Demon</option><option>Platformer</option><option>Custom</option></select><select id="fltStars" onchange="filterLevels()"><option value="">Any stars</option><option value="2">2+ ★</option><option value="5">5+ ★</option><option value="10">10+ ★</option><option value="14">14+ ★</option></select><select id="fltLen" onchange="filterLevels()"><option value="">Any length</option><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option><option value="platformer">Platformer</option></select><select id="fltSort" onchange="filterLevels()"><option value="">Sort: default</option><option value="name">Name A–Z</option><option value="difficulty">Difficulty</option><option value="stars">Stars ↓</option><option value="best">Best % ↓</option></select></div>
   <div id="noLevels" style="display:none;padding:14px;color:#f87171;font-weight:700">😕 No levels found — try a different name or difficulty.</div>
   <div class="levels" id="lvlList">${LEVELS.map((l,i)=>`
-    <div class="lvl ${i===levelIdx?'sel':''}" onclick="pickLevel(${i})">
+    <div class="lvl ${i===levelIdx?'sel':''}" data-diff="${l.diff}" data-stars="${l.stars}" data-len="${l.platformer?'platformer':(l.len<7000?'short':l.len<10000?'medium':'long')}" data-name="${l.name.toLowerCase()}" data-best="${best[l.id]||0}" onclick="pickLevel(${i})">
       <span class="diff" style="color:${DIFFC[l.diff]}">${l.diff}</span><b>${l.name}</b><br>
       <span class="stars">${l.platformer?'🌙'.repeat(l.moons||3):'★'.repeat(Math.min(10,l.stars))+'☆'.repeat(Math.max(0,10-l.stars))}</span> ${l.platformer?(l.moons||3)+'🌙 Moons':l.stars+'★'}<br>
       <span class="small">${l.desc}</span><br>
@@ -692,17 +870,17 @@ function showMenu(kind,newly){
     <button class="ghost" onclick="toggleMute()">${muted?'🔇 Muted':'🔊 Sound On'}</button>
   </div>
   <div class="row"><button class="alt" onclick="showEditor()">🛠 Create Level — Level Editor</button></div>
-  <h3>📁 My Levels</h3><div id="myLevels">${customLevels.length?customLevels.map((c,i)=>`<div class="myrow" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><b>${c.name}</b> <span class="small">Custom • ${c.objects?Object.values(c.objects).flat().length:0} objects</span><span class="row" style="margin:0"><button onclick="playCustom(${i})">▶ Play</button><button class="ghost" onclick="editCustom(${i})">✏️ Edit</button><button class="ghost" onclick="deleteCustom(${i})">🗑 Delete</button></span></div>`).join(''):'<p class="small">No custom levels yet — tap Create Level above!</p>'}</div>
+  <h3>📁 My Levels</h3><div id="myLevels">${customLevels.length?customLevels.map((c,i)=>`<div class="myrow" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><b>${c.name}${c.featured?' ⭐ Featured':''}</b> <span class="small">Custom • ${c.objects?Object.values(c.objects).flat().length:0} objects</span><span class="row" style="margin:0"><button onclick="playCustom(${i})">▶ Play</button><button class="ghost" onclick="editCustom(${i})">✏️ Edit</button><button class="ghost" onclick="deleteCustom(${i})">🗑 Delete</button></span></div>`).join(''):'<p class="small">No custom levels yet — tap Create Level above!</p>'}</div>
   <p class="small">Modes (9): Cube • Ship • Ball • UFO • Wave • Robot • Spider • Swing • Jetpack (Platformer) &nbsp;|&nbsp; Portals: mode / gravity / speed / size / free-fly / dual &nbsp;|&nbsp; Orbs: yellow / pink / blue / spider &nbsp;|&nbsp; Pads, rings, spikes, saws, moving blocks, secret coins, Moons.<br>Practice: <span class="kbd">Z</span> place checkpoint • <span class="kbd">X</span> remove it — auto-checkpoints on too. Platformer: <span class="kbd">A</span>/<span class="kbd">D</span> move, <span class="kbd">Space</span> jump.<br>Progress, best %, attempts, coins &amp; moons save in this browser (localStorage). Fan-made tribute — not affiliated with RobTop Games. Update 2.2 style, Dec 2023.</p>`;
   if(currentSearch){ const inp=document.getElementById('lvlSearch'); if(inp) inp.value=currentSearch; window.filterLevels(currentSearch); }
 }
 window.pickLevel=i=>{levelIdx=i;showMenu()};
-window.startSelected=prac=>loadLevel(levelIdx,prac);
+window.startSelected=prac=>showIntro(levelIdx,prac);
 window.nextLevel=()=>loadLevel(Math.min(levelIdx+1,LEVELS.length-1),false);
 window.pickShape=id=>{const s=SHAPES.find(x=>x.id===id);if(!unlocked.includes(id)){toast('🔒 Beat '+(LEVELS.find(l=>l.id===s.need)||{}).name+' to unlock '+s.name);return}icon.shape=id;store.set('icon',icon);showMenu()};
 window.pickColor=c=>{icon.color=c;icon.trail=c;store.set('icon',icon);showMenu()};
-function togglePause(){if(state==='playing'){state='paused';playing=false;stopMusic();draw()}else if(state==='paused'){state='playing';playing=true;startMusic(def)}}
-function toggleMute(){muted=!muted;store.set('muted',muted);if(master)master.gain.value=muted?0:0.35;$('btnMute').textContent=muted?'🔇 Muted':'🔊 Sound';if(state==='menu')showMenu()}
+function togglePause(){if(state==='playing'){state='paused';playing=false;stopMusic();draw();showPauseMenu()}else if(state==='paused'){resumeGame()}}
+function toggleMute(){muted=!muted;store.set('muted',muted);if(master)master.gain.value=muted?0:(typeof settings!=='undefined'?settings.musicVol:0.35);$('btnMute').textContent=muted?'🔇 Muted':'🔊 Sound';if(state==='menu')showMenu()}
 $('btnPause').onclick=togglePause;
 $('btnRestart').onclick=()=>{if(state==='playing'||state==='paused')loadLevel(levelIdx,practice)};
 $('btnMute').onclick=toggleMute;
