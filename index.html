@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Geometry Dash — Full Version (Fan Tribute)</title>
+<title>Geometry Dash — Full Version 2.2 (Fan Tribute)</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:#050510;font-family:'Segoe UI',Arial,sans-serif;color:#fff}
@@ -50,6 +50,32 @@ h2{margin:14px 0 8px;color:#67e8f9} h3{color:#facc15;margin:10px 0 6px}
     </div>
   </div>
   <canvas id="game" width="960" height="540"></canvas>
+  <div id="editorBar" style="display:none;width:min(960px,98vw);padding:8px;background:#0f172a;border:2px solid #facc15;border-radius:12px;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center">
+    <b style="color:#facc15">🛠 EDITOR</b>
+    <input id="edName" placeholder="Level name" value="My Level" style="padding:8px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#fff">
+    <button class="ghost" onclick="setEditorTool('spike')">▲ Spike</button>
+    <button class="ghost" onclick="setEditorTool('block')">■ Block</button>
+    <button class="ghost" onclick="setEditorTool('saw')">✹ Saw</button>
+    <button class="ghost" onclick="setEditorTool('pad')">Pad</button>
+    <button class="ghost" onclick="setEditorTool('ring')">○ Ring</button>
+    <button class="ghost" onclick="setEditorTool('coin')">★ Coin</button>
+    <button class="ghost" onclick="setEditorTool('orb')">● Orb</button>
+    <button class="ghost" onclick="setEditorTool('portal')">⬢ Portal</button>
+    <button class="ghost" onclick="setEditorTool('checkpoint')">✓ Check</button>
+    <button class="ghost" onclick="setEditorTool('finish')">🏁 Finish</button>
+    <button class="ghost" onclick="setEditorTool('erase')">🧽 Erase</button>
+    <select id="portalSel" style="padding:8px;border-radius:8px;background:#1e293b;color:#fff"><option value="ship">Ship</option><option value="ball">Ball</option><option value="ufo">UFO</option><option value="wave">Wave</option><option value="robot">Robot</option><option value="spider">Spider</option><option value="swing">Swing</option><option value="cube">Cube</option><option value="grav">Gravity flip</option><option value="speed">Speed</option></select>
+    <span id="edTool" style="font-weight:700;color:#67e8f9">Tool: Spike — tap the canvas to place</span>
+    <button onclick="editorScroll(-240)">◀</button><button onclick="editorScroll(240)">▶</button>
+    <button class="ghost" onclick="editorUndo()">↩ Undo</button>
+    <button class="ghost" onclick="editorClear()">🗑 Clear</button>
+    <button onclick="editorSave()">💾 Save</button>
+    <button class="alt" onclick="editorPlaytest()">▶ Playtest</button>
+    <button class="ghost" onclick="editorExport()">📤 Export</button>
+    <button class="ghost" onclick="editorImport()">📥 Import</button>
+    <button class="ghost" onclick="editorExit()">✖ Back to Menu</button>
+    <textarea id="edCode" placeholder="Share code appears here — paste a code here to import" style="width:100%;height:44px;border-radius:8px;background:#1e293b;color:#fff;padding:6px"></textarea>
+  </div>
   <div class="small" style="padding:6px;text-align:center">Controls: <span class="kbd">SPACE</span> / <span class="kbd">↑</span> / Click / Tap — Cube: jump • Ship: hold to fly • Ball: tap flips gravity • UFO: tap to hop • Wave: hold = up, release = down &nbsp;|&nbsp; <span class="kbd">P</span> pause • <span class="kbd">R</span> restart • <span class="kbd">M</span> mute</div>
   <div id="menu"><div class="panel" id="panel"></div></div>
   <div id="toast"></div>
@@ -79,6 +105,10 @@ const SHAPES=[
  {id:'star',name:'Star',icon:'★',need:'beat3'},
  {id:'heart',name:'Heart',icon:'♥',need:'beat4'},
  {id:'crown',name:'Crown',icon:'♛',need:'beat5'},
+ {id:'robot',name:'Robot',icon:'🤖',need:'beat6'},
+ {id:'spider',name:'Spider',icon:'🕷',need:'beat7'},
+ {id:'swing',name:'Swing',icon:'🌀',need:'beat8'},
+ {id:'jetpack',name:'Jetpack',icon:'🚀',need:'plat1'},
 ];
 const COLORS=['#22d3ee','#f472b6','#facc15','#4ade80','#a855f7','#fb923c','#f87171','#e2e8f0'];
 /* ---------- LEVELS (original names, themes, tempos) ---------- */
@@ -87,16 +117,33 @@ const LEVELS=[
  {id:'beat2',name:'Pixel Storm',diff:'Normal',stars:4,color:'#4ade80',bg:'#041a12',bpm:124,len:6800,seed:23,desc:'Ship + Ball portals appear. Watch the saws.'},
  {id:'beat3',name:'Crystal Voyage',diff:'Hard',stars:6,color:'#a855f7',bg:'#1a0a2e',bpm:132,len:8200,seed:37,desc:'UFO hops, gravity flips and tighter jumps.'},
  {id:'beat4',name:'Turbo Nebula',diff:'Harder',stars:8,color:'#fb923c',bg:'#2e0a0a',bpm:142,len:9800,seed:51,desc:'Speed portals, Wave sections and moving blocks.'},
- {id:'beat5',name:'Void Demon',diff:'Insane',stars:10,color:'#f87171',bg:'#1a0505',bpm:152,len:11400,seed:77,desc:'The final test. Every mode, no mercy. Demon.'},
+ {id:'beat5',name:'Void Demon',diff:'Insane',stars:10,color:'#f87171',bg:'#1a0505',bpm:152,len:11400,seed:77,desc:'The final test. Every mode, no mercy.'},
+ {id:'beat6',name:'Gear Works',diff:'Harder',stars:9,color:'#fbbf24',bg:'#241a05',bpm:146,len:10200,seed:91,desc:'NEW in 2.2 style: Robot mode — hold to jump higher.'},
+ {id:'beat7',name:'Spider Web',diff:'Insane',stars:11,color:'#c084fc',bg:'#1e0a2e',bpm:150,len:10800,seed:103,desc:'Spider mode — tap to teleport to the nearest surface.'},
+ {id:'beat8',name:'Swing City',diff:'Insane',stars:12,color:'#38bdf8',bg:'#041a2e',bpm:156,len:11200,seed:117,desc:'Swing mode, camera colour shifts, tight arcs.'},
+ {id:'beat9',name:'Abyss Demon',diff:'Demon',stars:14,color:'#ef4444',bg:'#200404',bpm:160,len:12400,seed:131,desc:'DEMON. All 9 modes, dual portals, orbs, no mercy.'},
+ {id:'plat1',name:'Neon Tower',diff:'Platformer',stars:0,moons:3,color:'#f472b6',bg:'#2e0a2e',bpm:120,len:0,seed:7,platformer:true,desc:'PLATFORMER MODE (2.2): move freely with A/D, jump, collect 3 Moons, Jetpack up the tower.'},
 ];
-const DIFFC={Easy:'#4ade80',Normal:'#22d3ee',Hard:'#facc15',Harder:'#fb923c',Insane:'#f87171'};
+const DIFFC2={Demon:'#ef4444',Platformer:'#f472b6'};
+let customLevels=store.get('custom',[]);
+function saveCustomLevels(){ store.set('custom',customLevels); refreshCustomLevels(); }
+function refreshCustomLevels(){ for(let i=LEVELS.length-1;i>=0;i--){ if(LEVELS[i].custom)LEVELS.splice(i,1); } customLevels.forEach(c=>LEVELS.push(c)); }
+refreshCustomLevels();
+const DIFFC={Easy:'#4ade80',Normal:'#22d3ee',Hard:'#facc15',Harder:'#fb923c',Insane:'#f87171',Demon:'#ef4444',Platformer:'#f472b6'};
 </script>
 <script>
 /* ---------- LEVEL BUILDER ---------- */
 function rng(seed){let s=seed;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
 function buildLevel(def){
+  if(def.custom&&def.objects){
+    const o=JSON.parse(JSON.stringify(def.objects));
+    o.floats=o.floats||[]; o.orbs=o.orbs||[]; o.duals=o.duals||[];
+    o.spikes=o.spikes||[]; o.blocks=o.blocks||[]; o.saws=o.saws||[]; o.pads=o.pads||[]; o.rings=o.rings||[]; o.portals=o.portals||[]; o.coins=o.coins||[]; o.checks=o.checks||[];
+    o.portals.forEach(x=>x.hit=false); o.rings.forEach(x=>x.used=false); o.coins.forEach(x=>x.got=false); o.checks.forEach(x=>x.hit=false); o.orbs.forEach(x=>x.used=false); o.duals.forEach(x=>x.hit=false);
+    o.finish=o.finish||5200; o.end=o.finish+300; return o;
+  }
   const R=rng(def.seed),o={spikes:[],blocks:[],saws:[],pads:[],rings:[],portals:[],coins:[],checks:[],floats:[]};
-  let x=500; const end=def.len;
+  let x=500; const end=def.len; o.orbs=[]; o.duals=[];
   const spike=(sx,n=1)=>{for(let i=0;i<n;i++)o.spikes.push({x:sx+i*36,y:GROUND-30,w:36,h:30})};
   const block=(sx,w=36,h=36,y=GROUND-h)=>o.blocks.push({x:sx,y,w,h});
   const saw=(sx,y=GROUND-24,r=22,dy=0)=>o.saws.push({x:sx,y,r,dy,ph:R()*6});
@@ -104,6 +151,8 @@ function buildLevel(def){
   const ring=(sx,y)=>o.rings.push({x:sx,y,used:false});
   const portal=(sx,type,val)=>o.portals.push({x:sx,type,val,hit:false});
   const coin=(sx,y)=>o.coins.push({x:sx,y,got:false});
+  const orb=(sx,y,type)=>o.orbs.push({x:sx,y,type,used:false});
+  const dual=(sx)=>o.duals.push({x:sx,hit:false});
   const patterns=[
     ()=>{spike(x);x+=220},
     ()=>{spike(x,2);x+=260},
@@ -123,12 +172,20 @@ function buildLevel(def){
     if(def.id!=='beat1'&&def.id!=='beat2'&&x>3200&&!o.portals.some(p=>p.type==='mode'&&p.val==='ball')){portal(x,'mode','ball');portal(x+60,'grav',-1);spike(x+200);x+=380;portal(x+220,'grav',1);portal(x+280,'mode','cube');x+=500;step++;continue}
     if((def.id==='beat3'||def.id==='beat4'||def.id==='beat5')&&x>5200&&!o.portals.some(p=>p.type==='mode'&&p.val==='ufo')){portal(x,'mode','ufo');spike(x+220);spike(x+420);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
     if((def.id==='beat4'||def.id==='beat5')&&x>7000&&!o.portals.some(p=>p.type==='mode'&&p.val==='wave')){portal(x,'mode','wave');saw(x+250,GROUND-200);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
+    if((def.id==='beat6'||def.id==='beat9')&&x>1500&&!o.portals.some(p=>p.type==='mode'&&p.val==='robot')){portal(x,'mode','robot');spike(x+220);spike(x+420);x+=620;portal(x+80,'mode','cube');x+=500;step++;continue}
+    if((def.id==='beat7'||def.id==='beat9')&&x>3200&&!o.portals.some(p=>p.type==='mode'&&p.val==='spider')){portal(x,'mode','spider');spike(x+200);x+=380;portal(x+220,'mode','cube');x+=500;step++;continue}
+    if((def.id==='beat8'||def.id==='beat9')&&x>5200&&!o.portals.some(p=>p.type==='mode'&&p.val==='swing')){portal(x,'mode','swing');saw(x+250,GROUND-200);saw(x+450,GROUND-120);x+=680;portal(x+80,'mode','cube');x+=500;step++;continue}
+    if(def.id==='beat9'&&x>8000&&!o.duals.length){dual(x);spike(x+240);x+=420;dual(x+80);portal(x+160,'mode','cube');x+=500;step++;continue}
+    if((def.id==='beat8'||def.id==='beat9')&&step%11===5){portal(x,'freefly',1);saw(x+200,GROUND-140);x+=380;portal(x+120,'freefly',0);x+=420;step++;continue}
     if(def.id==='beat4'||def.id==='beat5'){ if(step%7===3){portal(x,'speed',1.35);spike(x+200);x+=360;portal(x+140,'speed',1);x+=420;step++;continue} }
     if(def.id==='beat5'&&step%5===2){portal(x,'grav',-1);spike(x+160);x+=320;portal(x+40,'grav',1);x+=260;step++;continue}
     if(def.id!=='beat1'&&step%9===4){portal(x,'size',0.7);spike(x+160);x+=300;portal(x+80,'size',1);x+=360;step++;continue}
     patterns[Math.floor(R()*patterns.length)](); step++;
     if(R()<0.18){o.floats.push({x:x-120,y:GROUND-180-R()*80,w:70,h:18,dy:20+R()*30,ph:R()*6})}
   }
+  // orbs: yellow = jump, pink = big jump, blue = flip gravity, spider = teleport
+  orb(Math.floor(end*0.18),GROUND-140,'yellow'); orb(Math.floor(end*0.38),GROUND-170,'pink');
+  orb(Math.floor(end*0.58),GROUND-140,'blue'); orb(Math.floor(end*0.80),GROUND-160,'spider');
   // coins: 3, at reachable spots
   coin(900,GROUND-120); coin(Math.floor(end*0.45),GROUND-160); coin(Math.floor(end*0.78),GROUND-120);
   // checkpoints every ~22%
@@ -136,6 +193,27 @@ function buildLevel(def){
   // finish
   o.finish=end; o.end=end+300;
   return o;
+}
+/* ---------- PLATFORMER LEVEL (2.2 style, free movement, Moons) ---------- */
+function buildPlatformer(def){
+  // A vertical tower: platforms ascending from the bottom, spikes, moons, checkpoints, exit at top.
+  const plats=[], spikes=[], moons=[], checks=[];
+  let y=GROUND; // bottom platform
+  plats.push({x:0,y:GROUND,w:960,h:70});
+  const steps=[
+    {x:120,y:GROUND-90,w:180},{x:420,y:GROUND-180,w:180},{x:700,y:GROUND-270,w:180},
+    {x:380,y:GROUND-360,w:180},{x:120,y:GROUND-450,w:180},{x:560,y:GROUND-540,w:200},
+    {x:220,y:GROUND-630,w:180},{x:620,y:GROUND-720,w:180},{x:120,y:GROUND-810,w:200},
+    {x:480,y:GROUND-900,w:180},{x:180,y:GROUND-990,w:180},{x:600,y:GROUND-1080,w:200},
+    {x:300,y:GROUND-1170,w:200},{x:650,y:GROUND-1260,w:180},{x:150,y:GROUND-1350,w:220},
+    {x:500,y:GROUND-1440,w:220},
+  ];
+  steps.forEach(s=>plats.push({x:s.x,y:s.y,w:s.w,h:24}));
+  spikes.push({x:520,y:GROUND-30,w:36,h:30},{x:760,y:GROUND-300,w:36,h:30},{x:260,y:GROUND-480,w:36,h:30});
+  spikes.push({x:700,y:GROUND-750,w:36,h:30},{x:320,y:GROUND-1020,w:36,h:30});
+  moons.push({x:500,y:GROUND-260,got:false},{x:180,y:GROUND-880,got:false},{x:560,y:GROUND-1340,got:false});
+  checks.push({x:420,y:GROUND-180,hit:false},{x:560,y:GROUND-540,hit:false},{x:480,y:GROUND-900,hit:false},{x:500,y:GROUND-1440,hit:false});
+  return {plats,spikes,moons,checks,exit:{x:560,y:GROUND-1520,w:90,h:80},top:GROUND-1520,jetY:GROUND-1080};
 }
 /* ---------- AUDIO: original WebAudio beat tracks ---------- */
 let AC=null,master=null,musicTimer=null,beatCount=0,curLevel=null;
@@ -148,8 +226,10 @@ function sfx(name){if(muted)return;try{audio();const t=AC.currentTime;
   else if(name==='portal'){tone(500,t,0.15,'sine',0.2);tone(750,t+0.07,0.15,'sine',0.2)}
   else if(name==='check'){tone(660,t,0.12,'sine',0.2);tone(990,t+0.1,0.2,'sine',0.2)}
   else if(name==='win'){[523,659,784,1046].forEach((f,i)=>tone(f,t+i*0.12,0.25,'square',0.2))}
+  else if(name==='orb'){tone(1200,t,0.12,'sine',0.25);tone(1800,t+0.06,0.15,'sine',0.2)}
+  else if(name==='spider'){tone(900,t,0.08,'square',0.2);tone(300,t+0.05,0.1,'square',0.2)}
 }catch(e){}}
-const SCALES={beat1:[0,3,5,7,10],beat2:[0,2,3,7,8],beat3:[0,3,5,6,10],beat4:[0,2,5,7,9],beat5:[0,1,3,6,8]};
+const SCALES={beat1:[0,3,5,7,10],beat2:[0,2,3,7,8],beat3:[0,3,5,6,10],beat4:[0,2,5,7,9],beat5:[0,1,3,6,8],beat6:[0,2,3,7,10],beat7:[0,1,5,7,8],beat8:[0,3,5,7,9],beat9:[0,1,3,6,10],plat1:[0,3,5,7,10]};
 function startMusic(level){stopMusic();curLevel=level;audio();const base=220*Math.pow(2,(LEVELS.indexOf(level)-2)*0.5);const spb=60/level.bpm/2;beatCount=0;
   const scale=SCALES[level.id]||SCALES.beat1;
   musicTimer=setInterval(()=>{if(muted||!playing&&state!=='playing')return;const t=AC.currentTime+0.05;const b=beatCount++;
@@ -169,21 +249,32 @@ let px=0,py=GROUND-PLAYER,vy=0,mode='cube',grav=1,sizeMul=1,speedMul=1,holding=f
 let camX=0,dead=false,deadT=0,win=false,winT=0,progress=0,attempt=1,checkX=0,checkY=GROUND-PLAYER;
 let parts=[],trail=[],pulse=0,shake=0,rot=0,ringCooldown=0;
 let jumpBuf=0;
+let manualChecks=[], swingDir=1, robotHold=false, dualMode=false, freeFly=false, dualPy=0, dualVy=0;
+let plat=null, platVx=0, platKeys={left:false,right:false}, camY=0, moonsGot=store.get('moons',{}), platJet=false;
+function platMoons(id){return moonsGot[id]||[]}
+function addMoon(id,x){const a=moonsGot[id]||(moonsGot[id]=[]); if(!a.includes(Math.round(x))){a.push(Math.round(x)); store.set('moons',moonsGot)} return a.length}
 function loadLevel(i,prac=false){
-  levelIdx=i;def=LEVELS[i];level=buildLevel(def);practice=prac;
+  levelIdx=i;def=LEVELS[i];
+  if(def.platformer){ plat=buildPlatformer(def); level={spikes:plat.spikes,blocks:plat.plats,coins:plat.moons,checks:plat.checks,portals:[],rings:[],pads:[],saws:[],floats:[],orbs:[],duals:[],finish:999999,end:999999}; }
+  else { plat=null; level=buildLevel(def); }
+  practice=prac; manualChecks=[]; dualMode=false; freeFly=false; swingDir=1; robotHold=false;
   attempt=(attempts[def.id]||0)+1; attempts[def.id]=attempt; store.set('attempts',attempts);
   resetPlayer(0); state='playing'; playing=true; win=false; dead=false;
   $('menu').style.display='none'; startMusic(def); toast(def.name+' — '+def.diff+' • '+def.stars+'★');
 }
 function resetPlayer(x){
-  px=x||0; py=GROUND-PLAYER; vy=0; mode='cube'; grav=1; sizeMul=1; speedMul=1; grounded=true; rot=0;
+  px=x||0; py=def&&def.platformer?GROUND-PLAYER:GROUND-PLAYER; vy=0; mode=def&&def.platformer?'jetpack':'cube'; grav=1; sizeMul=1; speedMul=1; grounded=true; rot=0;
+  if(def&&def.platformer){ px=80; py=GROUND-PLAYER; camY=0; platVx=0; platJet=false; }
+  manualChecks=[]; dualMode=false; freeFly=false; swingDir=1;
   camX=Math.max(0,px-160); checkX=0; checkY=GROUND-PLAYER; parts=[]; trail=[]; progress=0;
   level.portals.forEach(p=>p.hit=false); level.checks.forEach(c=>c.hit=false); level.rings.forEach(r=>r.used=false);
   level.coins.forEach(c=>{if(!(coinsGot[def.id]||[]).includes(Math.round(c.x)))c.got=false;});
   updateHUD();
 }
 function respawn(){
-  if(practice&&checkX>0){px=checkX;py=checkY;vy=0;mode='cube';grav=1;sizeMul=1;speedMul=1;grounded=true;rot=0;camX=Math.max(0,px-160);dead=false;playing=true;toast('↩ Checkpoint');}
+  if(def&&def.platformer&&checkX>0){px=checkX;py=checkY;vy=0;mode='jetpack';grav=1;grounded=true;camX=0;dead=false;playing=true;toast('↩ Platformer checkpoint');}
+  else if(practice&&manualChecks.length){const c=manualChecks[manualChecks.length-1];px=c.x;py=c.y;vy=0;mode='cube';grav=1;sizeMul=1;speedMul=1;grounded=true;rot=0;camX=Math.max(0,px-160);dead=false;playing=true;toast('↩ Manual checkpoint (Z)');}
+  else if(practice&&checkX>0){px=checkX;py=checkY;vy=0;mode='cube';grav=1;sizeMul=1;speedMul=1;grounded=true;rot=0;camX=Math.max(0,px-160);dead=false;playing=true;toast('↩ Checkpoint');}
   else { attempt++; attempts[def.id]=attempt; store.set('attempts',attempts); resetPlayer(0); dead=false; playing=true; }
   updateHUD();
 }
@@ -195,7 +286,8 @@ function die(){
 function burst(x,y,color,n=18){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-0.5)*420,vy:(Math.random()-0.7)*420,life:0.7+Math.random()*0.5,t:0,color:Math.random()<0.5?color:'#ffffff',s:3+Math.random()*6})}
 function winLevel(){
   if(win)return; win=true; playing=false; winT=0; sfx('win'); stopMusic();
-  best[def.id]=100; store.set('best',best);
+  if(def.platformer){ best[def.id]=100; store.set('best',best); }
+  else { best[def.id]=100; store.set('best',best); }
   const newly=SHAPES.filter(s=>s.need===def.id&&!unlocked.includes(s.id));
   newly.forEach(s=>unlocked.push(s.id)); if(newly.length)store.set('unlocked',unlocked);
   burst(px,py,'#facc15',40);
@@ -203,12 +295,28 @@ function winLevel(){
 }
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2200)}
 function updateHUD(){$('prog').style.width=progress.toFixed(1)+'%';$('stats').textContent=Math.floor(progress)+'% • Attempt '+attempt+(practice?' • PRACTICE':'')+(win?' • ✓ COMPLETE':'');}
+function spiderTeleport(){
+  // Teleport instantly to the nearest surface above/below, then flip gravity (real Spider mode)
+  if(grav>0){ py=0; grav=-1; } else { py=GROUND-PLAYER*sizeMul; grav=1; }
+  vy=0; grounded=true; sfx('spider'); burst(px+18,py+18,'#c084fc',10);
+}
 /* ---------- INPUT ---------- */
 function press(down){
   if(state!=='playing')return;
   if(down){jumpBuf=0.12; audio();}
   holding=down;
   if(down){
+    // Orbs first (mid-air, like the real game): tap near an orb to trigger it
+    if(level&&level.orbs){ for(const o of level.orbs){ if(!o.used&&Math.hypot(px+18-o.x,py+18-o.y)<80){ o.used=true; sfx('orb'); burst(o.x,o.y,'#facc15',10);
+      if(o.type==='yellow'){vy=-720*grav;grounded=false}
+      else if(o.type==='pink'){vy=-920*grav;grounded=false}
+      else if(o.type==='blue'){grav*=-1;vy=0}
+      else if(o.type==='spider'){ spiderTeleport(); }
+      return; } } }
+    if(def&&def.platformer){ if(grounded){vy=-720;grounded=false;sfx('jump')} return; }
+    if(mode==='spider'){ spiderTeleport(); return; }
+    if(mode==='swing'){ grav*=-1; swingDir*=-1; vy=-380*grav; sfx('jump'); burst(px+18,py+18,'#38bdf8',6); return; }
+    if(mode==='robot'&&grounded){ robotHold=true; vy=-560; grounded=false; sfx('jump'); burst(px+18,py+36,'#fff',5); return; }
     if(mode==='ball'&&grounded){grav*=-1;vy=0;sfx('jump')}
     else if(mode==='ufo'&&(grounded||true)){vy=-560*grav;grounded=false;sfx('jump');burst(px+18,py+36,'#fff',4)}
     else if(mode==='cube'&&grounded){vy=-640;grounded=false;sfx('jump');burst(px+18,py+36,'#fff',5)}
@@ -221,37 +329,81 @@ window.addEventListener('keydown',e=>{
   if(e.code==='Space'||e.code==='ArrowUp'){e.preventDefault();if(!e.repeat)press(true)}
   if(e.code==='KeyP')togglePause(); if(e.code==='KeyR'&&state==='playing')respawn();
   if(e.code==='KeyM')toggleMute(); if(e.code==='Escape')showMenu();
+  if(e.code==='KeyZ'&&practice&&state==='playing'){ manualChecks.push({x:px,y:py}); toast('💚 Checkpoint placed (Z) — '+manualChecks.length); sfx('check'); }
+  if(e.code==='KeyX'&&practice&&state==='playing'){ manualChecks.pop(); toast('✖ Checkpoint removed (X)'); }
+  if(e.code==='KeyA'||e.code==='ArrowLeft')platKeys.left=true;
+  if(e.code==='KeyD'||e.code==='ArrowRight')platKeys.right=true;
 });
-window.addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='ArrowUp')press(false)});
-canvas.addEventListener('pointerdown',e=>{e.preventDefault();press(true)});
+window.addEventListener('keyup',e=>{if(e.code==='Space'||e.code==='ArrowUp'){press(false); robotHold=false}
+  if(e.code==='KeyA'||e.code==='ArrowLeft')platKeys.left=false;
+  if(e.code==='KeyD'||e.code==='ArrowRight')platKeys.right=false;});
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(state==='editor'){editorPlace(e);return}press(true)});
 window.addEventListener('pointerup',()=>press(false));
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 /* ---------- UPDATE ---------- */
 const SPEED=430;
 function collide(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function updatePlatformer(dt){
+  // Free movement (2.2 Platformer Mode): A/D or arrows to move, Space to jump, Jetpack near the top
+  const size=PLAYER*sizeMul;
+  platJet = py < (plat?plat.jetY:0);
+  const mv=(platKeys.right?1:0)-(platKeys.left?1:0);
+  platVx += mv*2400*dt; platVx*=Math.pow(0.0001,dt); platVx=clamp(platVx,-340,340);
+  px+=platVx*dt; px=clamp(px,0,960-size);
+  if(platJet&&holding){ vy-=2600*dt; if(vy<-420)vy=-420; }
+  else { vy+=2100*dt; if(vy>900)vy=900; }
+  py+=vy*dt;
+  const prevBottom=py+size-vy*dt;
+  grounded=false;
+  for(const b of plat.plats){
+    if(px+6<b.x+b.w&&px+size-6>b.x&&py+size>b.y&&py+size-vy*dt<=b.y+10&&vy>=0){ py=b.y-size; vy=0; grounded=true; }
+    else if(px+size-6>b.x&&px+6<b.x+b.w&&py+size>b.y+10&&py<b.y+b.h){ if(platVx>0)px=b.x-size+6; else if(platVx<0)px=b.x+b.w-6; }
+  }
+  if(py+size>=GROUND+70){ py=GROUND+70-size; vy=0; grounded=true; }
+  if(py<-1600){ py=-1600; vy=0; }
+  camY=clamp(py-320,-1600,0); camX=0;
+  progress=clamp((GROUND-py)/(GROUND-plat.top)*100,0,100);
+  for(const sp of plat.spikes){ if(collide({x:px+10,y:py+10,w:size-20,h:size-10},{x:sp.x+8,y:sp.y+10,w:sp.w-16,h:sp.h-10})){ die(); return; } }
+  for(const m of plat.moons){ if(!m.got&&Math.hypot(px+size/2-m.x,py+size/2-m.y)<44){ m.got=true; sfx('coin'); burst(m.x,m.y,'#f472b6',14); const n=addMoon(def.id,m.x); toast('🌙 Moon! '+n+'/3'); } }
+  for(const c of plat.checks){ if(!c.hit&&Math.abs(px-c.x)<60&&Math.abs(py-c.y)<80){ c.hit=true; checkX=c.x; checkY=c.y; sfx('check'); toast('✓ Checkpoint'); } }
+  if(px+size>plat.exit.x&&px<plat.exit.x+plat.exit.w&&py+size>plat.exit.y&&py<plat.exit.y+plat.exit.h){ winLevel(); return; }
+  trail.push({x:px+size/2,y:py+size/2,t:0}); if(trail.length>24)trail.shift();
+  updateHUD();
+}
 function update(dt){
   if(state!=='playing'||!playing)return;
   pulse+=dt; if(jumpBuf>0)jumpBuf-=dt; if(ringCooldown>0)ringCooldown-=dt;
+  if(def&&def.platformer){ updatePlatformer(dt); return; }
   const size=PLAYER*sizeMul, speed=SPEED*speedMul;
   px+=speed*dt; camX=Math.max(0,px-160);
   progress=clamp(px/level.finish*100,0,100);
   const prevY=py, prevBottom=py+size;
   // mode physics
-  if(mode==='cube'||mode==='ufo'){
+  if(mode==='robot'){
+    if(robotHold&&holding&&vy>-860)vy-=1600*dt; // hold = higher jump (real Robot)
+    vy+=2100*grav*dt; if(vy>900*grav)vy=900*grav; if(vy<-900*grav)vy=-900*grav;
+    py+=vy*dt; if(grav>0&&py+size>=GROUND){py=GROUND-size;vy=0;grounded=true;robotHold=false}else if(grav<0&&py<=0){py=0;vy=0;grounded=true;robotHold=false}else grounded=false;
+  } else if(mode==='spider'||mode==='ball'){
+    vy+=2100*grav*dt; py+=vy*dt;
+    if(grav>0&&py+size>=GROUND){py=GROUND-size;vy=0;grounded=true}else if(grav<0&&py<=0){py=0;vy=0;grounded=true}else grounded=false;
+  } else if(mode==='swing'){
+    // Swing (2.2): tap flips gravity, pendulum arcs — smooth sine-like fall/rise
+    vy+=1900*grav*dt; vy=clamp(vy,-620,620); py+=vy*dt;
+    if(py<=0||py+size>=GROUND){die();return}
+    grounded=false;
+  } else if(mode==='cube'||mode==='ufo'){
     vy+=2100*grav*dt; if(vy>900*grav)vy=900*grav; if(vy<-900*grav)vy=-900*grav;
     py+=vy*dt; if(grav>0&&py+size>=GROUND){py=GROUND-size;vy=0;grounded=true}else if(grav<0&&py<=0){py=0;vy=0;grounded=true}else grounded=false;
   } else if(mode==='ship'){
     vy+= (holding?-1500:1500)*dt; vy=clamp(vy,-520,520); py+=vy*dt;
     if(py+size>=GROUND){py=GROUND-size;vy=0} if(py<=0){py=0;vy=0}
     grounded=(py+size>=GROUND||py<=0);
-  } else if(mode==='ball'){
-    vy+=2100*grav*dt; py+=vy*dt;
-    if(grav>0&&py+size>=GROUND){py=GROUND-size;vy=0;grounded=true}else if(grav<0&&py<=0){py=0;vy=0;grounded=true}else grounded=false;
   } else if(mode==='wave'){
     py+=(holding?-560:560)*dt;
     if(py<=0||py+size>=GROUND){die();return}
   }
-  if(mode==='cube'&&grounded)rot+=dt*6; if(mode==='ball')rot+=dt*8*grav;
+  if(mode==='cube'&&grounded)rot+=dt*6; if(mode==='ball'||mode==='spider')rot+=dt*8*grav;
+  if(dualMode){ dualVy=vy; dualPy=GROUND-dualPy; /* mirrored icon tracked in draw via dualPy */ dualPy=clamp(GROUND-py-PLAYER*sizeMul,0,GROUND); }
   // blocks: stand / hit side
   for(const b of level.blocks){
     const box={x:px+4,y:py+4,w:size-8,h:size-8};
@@ -270,7 +422,7 @@ function update(dt){
   }
   // spikes (forgiving hitbox)
   for(const s of level.spikes){
-    if(collide({x:px+9,y:py+10,w:size-18,h:size-10},{x:s.x+7,y:s.y+8,w:s.w-14,h:s.h-8})){die();return}
+    if(collide({x:px+11,y:py+12,w:size-22,h:size-12},{x:s.x+10,y:s.y+12,w:s.w-20,h:s.h-12})){die();return}
   }
   for(const s of level.saws){
     const sy=s.y+Math.sin(pulse*2+s.ph)*s.dy;
@@ -281,17 +433,21 @@ function update(dt){
   for(const p of level.pads){if(!p.hit&&Math.abs(px+size/2-(p.x+p.w/2))<30&&py+size>=GROUND-4){vy=-820*grav;grounded=false;sfx('jump');burst(p.x,p.y,'#facc15',8)}}
   // portals
   for(const p of level.portals){if(!p.hit&&px>p.x){p.hit=true;
-    if(p.type==='mode'){mode=p.val;vy=0;if(mode==='wave'){py=GROUND/2}toast('⬢ '+mode.toUpperCase()+' MODE')}
+    if(p.type==='mode'){mode=p.val;vy=0;if(mode==='wave'){py=GROUND/2}if(mode==='swing'){swingDir=1;grav=1}toast('⬢ '+mode.toUpperCase()+' MODE')}
     else if(p.type==='grav'){grav=p.val;vy=0;toast(grav<0?'↓ Gravity flipped!':'↑ Gravity normal')}
     else if(p.type==='speed'){speedMul=p.val;toast(p.val>1?'» Speed up!':'» Speed normal')}
     else if(p.type==='size'){sizeMul=p.val;toast(p.val<1?'◈ Mini size!':'◈ Normal size')}
+    else if(p.type==='freefly'){freeFly=!!p.val;toast(freeFly?'🕊 Free-fly!':'🕊 Free-fly off')}
     sfx('portal');burst(px,py,'#fff',10);}}
+  for(const d of (level.duals||[])){ if(!d.hit&&px>d.x){ d.hit=true; dualMode=!dualMode; dualPy=GROUND-py-PLAYER*sizeMul; toast(dualMode?'👥 DUAL PORTAL — two icons!':'👤 Dual off'); sfx('portal'); } }
+  // orbs are triggered by tap in press(); draw them in render
   // rings (hold-free tap handled in press; also auto-check near)
   // coins
   for(const c of level.coins){if(!c.got&&Math.hypot(px+size/2-c.x,py+size/2-c.y)<44){c.got=true;sfx('coin');burst(c.x,c.y,'#facc15',12);
     const arr=coinsGot[def.id]||(coinsGot[def.id]=[]); if(!arr.includes(Math.round(c.x))){arr.push(Math.round(c.x));store.set('coins',coinsGot)} toast('🪙 Secret coin! '+(coinsGot[def.id].length)+'/3')}}
-  // checkpoints (practice)
+  // checkpoints (practice) — auto-checkpoints + manual Z checkpoints
   for(const c of level.checks){if(!c.hit&&px>c.x){c.hit=true;checkX=c.x;checkY=GROUND-PLAYER;if(practice){sfx('check');toast('✓ Checkpoint saved')}}}
+  if(practice&&!manualChecks.length&&Math.floor(px/600)!==Math.floor((px-speed*dt)/600)){ manualChecks.push({x:px,y:py}); }
   // trail + particles
   trail.push({x:px+size/2,y:py+size/2,t:0}); if(trail.length>24)trail.shift();
   if(Math.random()<0.5)parts.push({x:px+Math.random()*size,y:py+size,vx:-60,vy:-40,life:0.4,t:0,color:icon.trail,s:3});
@@ -302,10 +458,13 @@ function update(dt){
 <script>
 /* ---------- RENDER ---------- */
 function draw(){
+  if(def&&def.platformer&&plat){ drawPlatformer(); return; }
   const t=performance.now()/1000, beatPulse=1+0.06*Math.sin(pulse*6);
+  // Colour-shift per section: background hue changes every 25%
+  const secBg = def ? ['#0a0a2e','#1a0a2e','#0a1a2e','#2e0a1a','#0a2e1a'][Math.min(4,Math.floor(progress/25))] : '#0a0a2e';
   ctx.save(); if(shake>0){ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);shake*=0.85}
   // background
-  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,def?def.bg:'#0a0a2e'); g.addColorStop(1,'#050510'); ctx.fillStyle=g; ctx.fillRect(-20,-20,W+40,H+40);
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,state==='playing'?secBg:(def?def.bg:'#0a0a2e')); g.addColorStop(1,'#050510'); ctx.fillStyle=g; ctx.fillRect(-20,-20,W+40,H+40);
   // pulsing glow orbs + grid
   ctx.globalAlpha=0.25; ctx.fillStyle=def?def.color:'#22d3ee';
   for(let i=0;i<5;i++){const gx=((i*260-camX*0.3)%(W+200)+W+200)%(W+200)-100, gy=80+i*70; ctx.beginPath();ctx.arc(gx,gy,40*beatPulse,0,7);ctx.fill()}
@@ -324,6 +483,7 @@ function draw(){
   ctx.fillStyle='rgba(255,255,255,.15)'; for(let x=Math.floor(camX/60)*60;x<camX+W+60;x+=60)ctx.fillRect(x,GROUND+22,30,6);
   // checkpoints
   for(const c of level.checks){ctx.fillStyle=c.hit?'#4ade80':'#334155';ctx.fillRect(c.x,c.y-10,6,70);ctx.fillStyle=c.hit?'#4ade80':'#94a3b8';ctx.beginPath();ctx.moveTo(c.x+6,c.y-10);ctx.lineTo(c.x+34,c.y+2);ctx.lineTo(c.x+6,c.y+14);ctx.fill()}
+  for(const c of manualChecks){ ctx.fillStyle='#4ade80'; ctx.shadowColor='#4ade80'; ctx.shadowBlur=10; ctx.beginPath(); ctx.moveTo(c.x,c.y-14); ctx.lineTo(c.x+12,c.y); ctx.lineTo(c.x,c.y+14); ctx.lineTo(c.x-12,c.y); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0; }
   // portals
   for(const p of level.portals){const col=p.type==='mode'?'#f472b6':p.type==='grav'?'#22d3ee':p.type==='speed'?'#facc15':'#a855f7';
     ctx.save();ctx.globalAlpha=0.75;ctx.fillStyle=col;ctx.shadowColor=col;ctx.shadowBlur=20;ctx.fillRect(p.x,GROUND-160,14,160);ctx.restore();
@@ -331,6 +491,8 @@ function draw(){
   // pads / rings
   for(const p of level.pads){ctx.fillStyle='#facc15';ctx.shadowColor='#facc15';ctx.shadowBlur=12;ctx.fillRect(p.x,p.y,p.w,p.h);ctx.shadowBlur=0}
   for(const r of level.rings){ctx.strokeStyle=r.used?'#64748b':'#facc15';ctx.lineWidth=5;ctx.beginPath();ctx.arc(r.x,r.y,20,0,7);ctx.stroke();ctx.fillStyle='#facc15';ctx.beginPath();ctx.arc(r.x,r.y,6,0,7);ctx.fill()}
+  for(const o of (level.orbs||[])){ if(o.used)continue; const oc=o.type==='yellow'?'#facc15':o.type==='pink'?'#f472b6':o.type==='blue'?'#38bdf8':'#c084fc'; ctx.save(); ctx.strokeStyle=oc; ctx.lineWidth=4; ctx.shadowColor=oc; ctx.shadowBlur=12; ctx.beginPath(); ctx.arc(o.x,o.y,16,0,7); ctx.stroke(); ctx.fillStyle=oc; ctx.font='bold 12px Arial'; ctx.textAlign='center'; ctx.fillText(o.type==='spider'?'🕷':o.type==='blue'?'↓':'●',o.x,o.y+4); ctx.restore(); }
+  for(const d of (level.duals||[])){ ctx.save(); ctx.globalAlpha=0.8; ctx.fillStyle='#f472b6'; ctx.shadowColor='#f472b6'; ctx.shadowBlur=16; ctx.fillRect(d.x,GROUND-160,10,160); ctx.restore(); ctx.fillStyle='#fff'; ctx.font='bold 12px Arial'; ctx.fillText('DUAL',d.x-8,GROUND-170); }
   // blocks
   for(const b of level.blocks){ctx.fillStyle='#1e293b';ctx.strokeStyle=def.color;ctx.lineWidth=3;ctx.shadowColor=def.color;ctx.shadowBlur=8;ctx.fillRect(b.x,b.y,b.w,b.h);ctx.strokeRect(b.x,b.y,b.w,b.h);ctx.shadowBlur=0;ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(b.x+4,b.y+4,b.w-8,10)}
   for(const f of level.floats){const fy=f.y+Math.sin(pulse*2+f.ph)*f.dy;ctx.fillStyle='#334155';ctx.strokeStyle='#f472b6';ctx.lineWidth=2;ctx.fillRect(f.x,fy,f.w,f.h);ctx.strokeRect(f.x,fy,f.w,f.h)}
@@ -350,12 +512,18 @@ function draw(){
     ctx.save();ctx.translate(cx,cy);ctx.shadowColor=icon.color;ctx.shadowBlur=18;ctx.fillStyle=icon.color;ctx.strokeStyle='#fff';ctx.lineWidth=3;
     if(mode==='ship'){ctx.rotate(clamp(vy/600,-0.5,0.5));ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(-14,-13);ctx.lineTo(-6,0);ctx.lineTo(-14,13);ctx.closePath();ctx.fill();ctx.stroke()}
     else if(mode==='ball'||icon.shape==='ball'){ctx.beginPath();ctx.arc(0,0,size/2,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-5,-5,4,0,7);ctx.arc(6,4,4,0,7);ctx.fill()}
+    else if(mode==='robot'){ctx.rotate(mode==='robot'?rot*0.5:0);ctx.fillRect(-size/2,-size/2,size,size);ctx.strokeRect(-size/2,-size/2,size,size);ctx.fillStyle='#fff';ctx.fillRect(-size/4,-size/2-8,6,10);ctx.fillRect(size/8,-size/2-8,6,10);ctx.fillStyle='#0f172a';ctx.fillRect(-size/4,-size/8,size/2,size/4)}
+    else if(mode==='spider'){ctx.beginPath();for(let i=0;i<8;i++){const a=i/8*Math.PI*2;ctx.lineTo(Math.cos(a)*size/2,Math.sin(a)*size/2)}ctx.closePath();ctx.fill();ctx.stroke();ctx.strokeStyle='#fff';ctx.lineWidth=2;for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(-size/2+i*10,-size/2);ctx.lineTo(-size/2+i*10-8,-size/2-12);ctx.stroke()}}
+    else if(mode==='swing'){ctx.rotate(Math.sin(t*4)*0.3);ctx.beginPath();ctx.arc(0,0,size/3,0,7);ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,-size/2);ctx.lineTo(0,-size);ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,-size,5,0,7);ctx.fill()}
+    else if(mode==='jetpack'){ctx.fillRect(-size/2,-size/2,size,size);ctx.strokeRect(-size/2,-size/2,size,size);ctx.fillStyle='#fb923c';ctx.fillRect(-size/2-8,-size/4,8,size/2);if(holding){ctx.fillStyle='#facc15';ctx.beginPath();ctx.moveTo(-size/2-8,0);ctx.lineTo(-size/2-20,8);ctx.lineTo(-size/2-8,16);ctx.fill()}}
     else if(mode==='wave'){ctx.rotate(holding?-0.6:0.6);ctx.beginPath();ctx.moveTo(0,-size/2);ctx.lineTo(size/2,size/2);ctx.lineTo(-size/2,size/2);ctx.closePath();ctx.fill();ctx.stroke()}
     else if(mode==='ufo'){ctx.rotate(Math.sin(t*3)*0.1);ctx.beginPath();ctx.ellipse(0,0,size/2,size/3,0,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,-size/4,6,0,7);ctx.fill()}
     else {ctx.rotate(mode==='cube'?rot:0);if(icon.shape==='star'){ctx.beginPath();for(let i=0;i<10;i++){const a=i/10*Math.PI*2-Math.PI/2,r=i%2?size/4:size/2;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath();ctx.fill();ctx.stroke()}
       else if(icon.shape==='heart'||icon.shape==='crown'){ctx.font=size+'px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(icon.shape==='heart'?'♥':'♛',0,2)}
       else {ctx.fillRect(-size/2,-size/2,size,size);ctx.strokeRect(-size/2,-size/2,size,size);ctx.fillStyle='#fff';ctx.fillRect(-size/4,-size/4,size/4,size/4);ctx.fillRect(size/8,size/8,size/4,size/4)}}
     ctx.restore();
+    // dual second icon, mirrored vertically
+    if(dualMode){ const ds=size; ctx.save(); ctx.translate(px+ds/2,dualPy+ds/2); ctx.globalAlpha=0.85; ctx.fillStyle='#f472b6'; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.fillRect(-ds/2,-ds/2,ds,ds); ctx.strokeRect(-ds/2,-ds/2,ds,ds); ctx.restore(); }
     // eyes for cube/ship
     if(mode==='cube'||mode==='ship'){ctx.fillStyle='#0f172a';ctx.fillRect(px+size*0.55,py+size*0.28,6,8);ctx.fillRect(px+size*0.75,py+size*0.28,6,8)}
   }
@@ -367,6 +535,32 @@ function draw(){
   if(win){ctx.fillStyle='#facc15';ctx.font='bold 48px Arial';ctx.textAlign='center';ctx.fillText('★ LEVEL COMPLETE! ★',W/2,H/2);ctx.textAlign='left'}
   if(state==='paused'){ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='bold 44px Arial';ctx.textAlign='center';ctx.fillText('⏸ PAUSED',W/2,H/2);ctx.textAlign='left'}
 }
+/* ---------- PLATFORMER RENDER ---------- */
+function drawPlatformer(){
+  const t=performance.now()/1000;
+  ctx.save();
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,def.bg); g.addColorStop(1,'#050510'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.translate(0,-camY);
+  // tower background grid
+  ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1;
+  for(let y=-1600;y<540;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  for(const b of plat.plats){ ctx.fillStyle='#1e293b'; ctx.strokeStyle=def.color; ctx.lineWidth=3; ctx.fillRect(b.x,b.y,b.w,b.h); ctx.strokeRect(b.x,b.y,b.w,b.h); }
+  for(const sp of plat.spikes){ ctx.fillStyle='#e2e8f0'; ctx.beginPath(); ctx.moveTo(sp.x,sp.y+sp.h); ctx.lineTo(sp.x+sp.w/2,sp.y); ctx.lineTo(sp.x+sp.w,sp.y+sp.h); ctx.closePath(); ctx.fill(); }
+  for(const m of plat.moons){ if(m.got)continue; ctx.save(); ctx.translate(m.x,m.y); ctx.fillStyle='#f472b6'; ctx.shadowColor='#f472b6'; ctx.shadowBlur=16; ctx.beginPath(); ctx.arc(0,0,16,0,7); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='bold 18px Arial'; ctx.textAlign='center'; ctx.fillText('🌙',0,6); ctx.restore(); }
+  for(const c of plat.checks){ ctx.fillStyle=c.hit?'#4ade80':'#334155'; ctx.fillRect(c.x,c.y-10,6,70); }
+  // exit door
+  ctx.fillStyle='#4ade80'; ctx.fillRect(plat.exit.x,plat.exit.y,plat.exit.w,plat.exit.h); ctx.fillStyle='#04122a'; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.fillText('EXIT',plat.exit.x+45,plat.exit.y+45);
+  if(platJet){ ctx.fillStyle='#facc15'; ctx.font='bold 16px Arial'; ctx.fillText('🚀 JETPACK — hold SPACE!',px,py-30); }
+  // player
+  if(!dead){ const size=PLAYER*sizeMul; ctx.save(); ctx.translate(px+size/2,py+size/2); ctx.shadowColor=icon.color; ctx.shadowBlur=18; ctx.fillStyle=icon.color; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.fillRect(-size/2,-size/2,size,size); ctx.strokeRect(-size/2,-size/2,size,size); ctx.fillStyle='#fff'; ctx.fillRect(-size/4,-size/4,size/4,size/4); ctx.restore(); }
+  for(const pt of parts){ ctx.globalAlpha=1-pt.t/pt.life; ctx.fillStyle=pt.color; ctx.fillRect(pt.x-pt.s/2,pt.y-pt.s/2,pt.s,pt.s); } ctx.globalAlpha=1;
+  ctx.restore();
+  ctx.fillStyle='#fff'; ctx.font='bold 18px Arial'; ctx.textAlign='left'; ctx.fillText('🌙 Moons: '+platMoons(def.id).length+'/3  •  '+Math.floor(progress)+'%',16,28);
+  ctx.fillText('A/D move • Space jump • hold Space for Jetpack up top',16,H-16);
+  if(dead){ ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#f87171'; ctx.font='bold 48px Arial'; ctx.textAlign='center'; ctx.fillText('💥 CRASHED!',W/2,H/2); ctx.textAlign='left'; }
+  if(win){ ctx.fillStyle='#facc15'; ctx.font='bold 44px Arial'; ctx.textAlign='center'; ctx.fillText('🌙 TOWER COMPLETE!',W/2,H/2); ctx.textAlign='left'; }
+  ctx.restore();
+}
 /* ---------- LOOP ---------- */
 let last=performance.now();
 function loop(now){const dt=Math.min(0.033,(now-last)/1000);last=now;
@@ -376,23 +570,118 @@ function loop(now){const dt=Math.min(0.033,(now-last)/1000);last=now;
   trail.forEach(p=>p.t+=dt);
   draw(); requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
+/* ---------- LEVEL EDITOR (original fan editor) ---------- */
+let editorTool='spike', editorData=null, editorCamX=0, editorEditing=-1;
+function freshEditorData(){ return {spikes:[],blocks:[],saws:[],pads:[],rings:[],coins:[],portals:[],checks:[],orbs:[],duals:[],finish:5200}; }
+function editorLevelFromData(){
+  const o=JSON.parse(JSON.stringify(editorData));
+  o.floats=[]; o.orbs=o.orbs||[]; o.duals=o.duals||[];
+  o.portals.forEach(x=>x.hit=false); o.rings.forEach(x=>x.used=false); o.coins.forEach(x=>x.got=false); o.checks.forEach(x=>x.hit=false); o.orbs.forEach(x=>x.used=false);
+  o.finish=o.finish||5200; o.end=o.finish+300; return o;
+}
+window.showEditor=function(idx){
+  editorEditing=(typeof idx==='number'?idx:-1);
+  editorData = editorEditing>=0 ? JSON.parse(JSON.stringify(customLevels[editorEditing].objects)) : freshEditorData();
+  const nm=document.getElementById('edName'); if(nm) nm.value = editorEditing>=0 ? customLevels[editorEditing].name : 'My Level';
+  state='editor'; playing=false; stopMusic();
+  def={id:'editor',name:'Editor',color:'#22d3ee',bg:'#0a0a2e',bpm:120,platformer:false};
+  level=editorLevelFromData(); plat=null; editorCamX=0; camX=0; px=0; py=GROUND-PLAYER; dead=false; win=false;
+  document.getElementById('menu').style.display='none';
+  const bar=document.getElementById('editorBar'); bar.style.display='flex';
+  toast('🛠 Editor — tap the canvas to place objects');
+};
+window.setEditorTool=function(t){ editorTool=t; const el=document.getElementById('edTool'); if(el) el.textContent='Tool: '+t+' — tap the canvas to place'; };
+window.editorScroll=function(dx){ editorCamX=Math.max(0,editorCamX+dx); camX=editorCamX; level=editorLevelFromData(); };
+window.editorUndo=function(){ if(editorUndoStack.length){ editorData=JSON.parse(editorUndoStack.pop()); level=editorLevelFromData(); toast('↩ Undone'); } };
+let editorUndoStack=[];
+function editorPushUndo(){ editorUndoStack.push(JSON.stringify(editorData)); if(editorUndoStack.length>50)editorUndoStack.shift(); }
+window.editorClear=function(){ editorPushUndo(); editorData=freshEditorData(); level=editorLevelFromData(); toast('🗑 Cleared'); };
+window.editorExit=function(){ document.getElementById('editorBar').style.display='none'; showMenu(); };
+window.editorSave=function(){
+  const name=(document.getElementById('edName').value||'My Level').trim();
+  const defObj={id: editorEditing>=0?customLevels[editorEditing].id:'custom_'+Date.now(), name, diff:'Custom', stars:3, color:'#22d3ee', bg:'#0a0a2e', bpm:120, len:5200, seed:0, custom:true, objects:JSON.parse(JSON.stringify(editorData))};
+  if(editorEditing>=0) customLevels[editorEditing]=defObj; else customLevels.push(defObj);
+  saveCustomLevels(); toast('💾 Saved "'+name+'" to My Levels'); document.getElementById('editorBar').style.display='none'; showMenu();
+};
+window.editorPlaytest=function(){
+  const name=(document.getElementById('edName').value||'My Level').trim();
+  const defObj={id:'custom_test_'+Date.now(), name:name+' (Playtest)', diff:'Custom', stars:3, color:'#22d3ee', bg:'#0a0a2e', bpm:120, len:5200, seed:0, custom:true, objects:JSON.parse(JSON.stringify(editorData))};
+  LEVELS.push(defObj); levelIdx=LEVELS.length-1;
+  document.getElementById('editorBar').style.display='none';
+  loadLevel(levelIdx,false);
+};
+window.editorExport=function(){
+  try{ const code=btoa(unescape(encodeURIComponent(JSON.stringify({name:document.getElementById('edName').value||'My Level',objects:editorData})))); const ta=document.getElementById('edCode'); ta.value=code; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(code).catch(()=>{}); toast('📤 Share code copied!'); }catch(e){ toast('Export failed'); }
+};
+window.editorImport=function(){
+  const raw=(document.getElementById('edCode').value||'').trim(); if(!raw){ toast('Paste a share code first'); return; }
+  try{ let obj; try{ obj=JSON.parse(raw); }catch(e){ obj=JSON.parse(decodeURIComponent(escape(atob(raw)))); }
+    if(!obj.objects) throw new Error('no objects');
+    editorPushUndo(); editorData=obj.objects; if(obj.name)document.getElementById('edName').value=obj.name; level=editorLevelFromData(); toast('📥 Imported "'+(obj.name||'level')+'"');
+  }catch(e){ toast('❌ That code did not work'); }
+};
+window.playCustom=function(i){ const idx=LEVELS.findIndex(l=>l.id===customLevels[i].id); if(idx>=0) loadLevel(idx,false); };
+window.editCustom=function(i){ showEditor(i); };
+window.deleteCustom=function(i){ if(confirm('Delete "'+customLevels[i].name+'"?')){ customLevels.splice(i,1); saveCustomLevels(); showMenu(); } };
+function editorPlace(e){
+  const rect=canvas.getBoundingClientRect();
+  const wx=editorCamX+(e.clientX-rect.left)*(canvas.width/rect.width);
+  const wy=(e.clientY-rect.top)*(canvas.height/rect.height);
+  const sx=Math.round(wx/36)*36, sy=Math.round(wy/36)*36;
+  editorPushUndo();
+  if(editorTool==='erase'){
+    const lists=['spikes','blocks','saws','pads','rings','coins','portals','checks','orbs','duals'];
+    for(const k of lists){ const arr=editorData[k]||[]; for(let i=arr.length-1;i>=0;i--){ if(Math.abs((arr[i].x||0)-wx)<50&&Math.abs((arr[i].y||0)-wy)<60){ arr.splice(i,1); level=editorLevelFromData(); return; } } }
+    return;
+  }
+  if(editorTool==='spike') editorData.spikes.push({x:sx,y:GROUND-30,w:36,h:30});
+  else if(editorTool==='block') editorData.blocks.push({x:sx,y:Math.min(sy,GROUND-36),w:72,h:36});
+  else if(editorTool==='saw') editorData.saws.push({x:sx,y:sy,r:22,dy:0,ph:0});
+  else if(editorTool==='pad') editorData.pads.push({x:sx,y:GROUND-10,w:44,h:10});
+  else if(editorTool==='ring') editorData.rings.push({x:sx,y:sy,used:false});
+  else if(editorTool==='coin') editorData.coins.push({x:sx,y:sy,got:false});
+  else if(editorTool==='orb') editorData.orbs.push({x:sx,y:sy,type:'yellow',used:false});
+  else if(editorTool==='checkpoint') editorData.checks.push({x:sx,y:GROUND-60,hit:false});
+  else if(editorTool==='finish'){ editorData.finish=sx; toast('🏁 Finish set'); }
+  else if(editorTool==='portal'){
+    const sel=(document.getElementById('portalSel')||{}).value||'ship';
+    if(sel==='grav') editorData.portals.push({x:sx,type:'grav',val:-1,hit:false});
+    else if(sel==='speed') editorData.portals.push({x:sx,type:'speed',val:1.35,hit:false});
+    else editorData.portals.push({x:sx,type:'mode',val:sel,hit:false});
+  }
+  level=editorLevelFromData();
+}
+/* ---------- LEVEL SEARCH ---------- */
+let currentSearch='';
+window.filterLevels=function(q){
+  currentSearch=(q||'').toLowerCase().trim();
+  const cards=document.querySelectorAll('#panel .lvl');
+  let visible=0;
+  cards.forEach(c=>{ const t=(c.textContent||'').toLowerCase(); const hit=!currentSearch||t.includes(currentSearch); c.style.display=hit?'':'none'; if(hit)visible++; });
+  const no=document.getElementById('noLevels'); if(no) no.style.display=visible?'none':'block';
+  return visible;
+};
+window.clearSearch=function(){ currentSearch=''; const inp=document.getElementById('lvlSearch'); if(inp) inp.value=''; window.filterLevels(''); };
 /* ---------- MENU / UI ---------- */
 function showMenu(kind,newly){
   state='menu'; playing=false; stopMusic(); $('menu').style.display='flex';
   const p=$('panel');
   if(kind==='win'){
-    p.innerHTML=`<h1>★ LEVEL COMPLETE! ★</h1><p class="sub">${def.name} beaten — ${def.stars}★ earned • ${attempt} attempts • ${(coinsGot[def.id]||[]).length}/3 coins</p>
+    p.innerHTML=`<h1>★ LEVEL COMPLETE! ★</h1><p class="sub">${def.name} beaten — ${def.platformer?platMoons(def.id).length+'🌙 Moons':def.stars+'★'} earned • ${attempt} attempts • ${def.platformer?'':(coinsGot[def.id]||[]).length+'/3 coins'}</p>
     ${newly&&newly.length?`<p>🎉 New icon unlocked: <b>${newly.map(s=>s.name).join(', ')}</b></p>`:''}
     <div class="row"><button onclick="nextLevel()">▶ Next Level</button><button class="alt" onclick="showMenu()">Level Select</button></div>`;
     return;
   }
   p.innerHTML=`<h1>⬢ GEOMETRY DASH</h1><div class="sub">FULL VERSION — fan tribute • original levels, music &amp; art • no official assets</div>
-  <h2>🎮 Choose a Level</h2><div class="levels">${LEVELS.map((l,i)=>`
+  <h2>🎮 Choose a Level</h2>
+  <div class="row" style="margin:6px 0 2px"><input id="lvlSearch" placeholder="🔍 Search levels — name or difficulty (Easy, Demon…)" value="" oninput="filterLevels(this.value)" style="flex:1;min-width:220px;max-width:520px;padding:10px 14px;border-radius:99px;border:2px solid #22d3ee;background:#0f172a;color:#fff;font:700 14px 'Segoe UI',Arial,sans-serif"><button class="ghost" onclick="clearSearch()">✖ Clear</button></div>
+  <div id="noLevels" style="display:none;padding:14px;color:#f87171;font-weight:700">😕 No levels found — try a different name or difficulty.</div>
+  <div class="levels" id="lvlList">${LEVELS.map((l,i)=>`
     <div class="lvl ${i===levelIdx?'sel':''}" onclick="pickLevel(${i})">
       <span class="diff" style="color:${DIFFC[l.diff]}">${l.diff}</span><b>${l.name}</b><br>
-      <span class="stars">${'★'.repeat(l.stars)}${'☆'.repeat(10-l.stars)}</span> ${l.stars}★<br>
+      <span class="stars">${l.platformer?'🌙'.repeat(l.moons||3):'★'.repeat(Math.min(10,l.stars))+'☆'.repeat(Math.max(0,10-l.stars))}</span> ${l.platformer?(l.moons||3)+'🌙 Moons':l.stars+'★'}<br>
       <span class="small">${l.desc}</span><br>
-      <span class="small">Best: ${best[l.id]||0}% • Attempts: ${attempts[l.id]||0} • Coins: ${(coinsGot[l.id]||[]).length}/3 • ${l.bpm} BPM</span>
+      <span class="small">Best: ${best[l.id]||0}% • Attempts: ${attempts[l.id]||0} • ${l.platformer?'Moons: '+platMoons(l.id).length+'/'+(l.moons||3):'Coins: '+(coinsGot[l.id]||[]).length+'/3'} • ${l.bpm} BPM</span>
     </div>`).join('')}</div>
   <h3>🎨 Your Icon ${unlocked.length}/${SHAPES.length} unlocked</h3>
   <div class="swatches">${SHAPES.map(s=>{const un=unlocked.includes(s.id);return `<div class="sw ${icon.shape===s.id?'sel':''} ${un?'':'locked'}" style="background:${un?icon.color:'#334155'}" title="${s.name}${un?'':' — beat '+(LEVELS.find(l=>l.id===s.need)||{}).name||''} to unlock" onclick="pickShape('${s.id}')">${s.icon}</div>`}).join('')}</div>
@@ -402,7 +691,10 @@ function showMenu(kind,newly){
     <button class="alt" onclick="startSelected(true)">✦ Practice Mode (checkpoints)</button>
     <button class="ghost" onclick="toggleMute()">${muted?'🔇 Muted':'🔊 Sound On'}</button>
   </div>
-  <p class="small">Modes: Cube • Ship • Ball • UFO • Wave &nbsp;|&nbsp; Portals: mode / gravity / speed / size &nbsp;|&nbsp; Pads, rings, spikes, saws, moving blocks, secret coins.<br>Progress, best %, attempts &amp; coins save in this browser (localStorage). Fan-made tribute — not affiliated with RobTop Games.</p>`;
+  <div class="row"><button class="alt" onclick="showEditor()">🛠 Create Level — Level Editor</button></div>
+  <h3>📁 My Levels</h3><div id="myLevels">${customLevels.length?customLevels.map((c,i)=>`<div class="myrow" style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:10px;margin:6px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap"><b>${c.name}</b> <span class="small">Custom • ${c.objects?Object.values(c.objects).flat().length:0} objects</span><span class="row" style="margin:0"><button onclick="playCustom(${i})">▶ Play</button><button class="ghost" onclick="editCustom(${i})">✏️ Edit</button><button class="ghost" onclick="deleteCustom(${i})">🗑 Delete</button></span></div>`).join(''):'<p class="small">No custom levels yet — tap Create Level above!</p>'}</div>
+  <p class="small">Modes (9): Cube • Ship • Ball • UFO • Wave • Robot • Spider • Swing • Jetpack (Platformer) &nbsp;|&nbsp; Portals: mode / gravity / speed / size / free-fly / dual &nbsp;|&nbsp; Orbs: yellow / pink / blue / spider &nbsp;|&nbsp; Pads, rings, spikes, saws, moving blocks, secret coins, Moons.<br>Practice: <span class="kbd">Z</span> place checkpoint • <span class="kbd">X</span> remove it — auto-checkpoints on too. Platformer: <span class="kbd">A</span>/<span class="kbd">D</span> move, <span class="kbd">Space</span> jump.<br>Progress, best %, attempts, coins &amp; moons save in this browser (localStorage). Fan-made tribute — not affiliated with RobTop Games. Update 2.2 style, Dec 2023.</p>`;
+  if(currentSearch){ const inp=document.getElementById('lvlSearch'); if(inp) inp.value=currentSearch; window.filterLevels(currentSearch); }
 }
 window.pickLevel=i=>{levelIdx=i;showMenu()};
 window.startSelected=prac=>loadLevel(levelIdx,prac);
